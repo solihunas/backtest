@@ -3,20 +3,8 @@
   :root{
     --page-bg:#e7e9ec;
     --page-bg-dark:#1c1e22;
-    --paper:#ffffff;
-    --ink:#1a1a1a;
-    --label:#3b3b3b;
-    --rule:#c9cdd3;
-    --grid:#f0cdd4;
-    --axis-text:#8a3b3b;
-    --blue:#1414ef;
-    --green:#0a8a2c;
-    --marginfill:#1f9e4a;
-    --marginline:#e11d1d;
   }
-  @media (prefers-color-scheme: dark){
-    :root{ --shell-bg:var(--page-bg-dark); }
-  }
+  @media (prefers-color-scheme: dark){ :root{ --shell-bg:var(--page-bg-dark); } }
   :root{ --shell-bg:var(--page-bg); }
   :root[data-theme="dark"]{ --shell-bg:var(--page-bg-dark); }
   :root[data-theme="light"]{ --shell-bg:var(--page-bg); }
@@ -26,159 +14,107 @@
   body{
     background:var(--shell-bg);
     font-family:Tahoma, "Segoe UI", Arial, sans-serif;
-    color:var(--ink);
-    padding:28px 14px 48px;
+    padding:20px 10px 40px;
     display:flex;
     justify-content:center;
   }
 
   .sheet{
     width:100%;
-    max-width:900px;
-    background:var(--paper);
-    border:1px solid #b9bec5;
-    box-shadow:0 8px 28px rgba(0,0,0,.22);
+    max-width:750px;
+    background:#ffffff;
+    color:#1a1a1a;
   }
 
-  .sheet-head{
-    padding:10px 14px 4px;
-    font-size:12px;
-    color:#555;
-    border-bottom:1px solid var(--rule);
+  .legend{
+    font-size:10px;
+    padding:2px 6px 1px;
   }
-  .sheet-head b{color:#111;font-size:13px;}
+  .legend .bal{color:#3333cc;}
+  .legend .sep{color:#8a8a8a;}
+  .legend .eq{color:#009a00;}
 
-  .chart-wrap{
-    padding:8px 10px 0;
-  }
-  .chart-legend{
-    font-size:11px;
-    padding:2px 4px 0;
-    display:flex;
-    gap:14px;
-  }
-  .chart-legend span{display:inline-flex;align-items:center;gap:5px;}
-  .chart-legend i{width:11px;height:3px;display:inline-block;}
   canvas{display:block;width:100%;}
 
-  table.report{
-    width:100%;
-    border-collapse:collapse;
-    font-size:12px;
-    margin-top:6px;
+  .report{ width:100%; }
+  .row{ display:grid; grid-template-columns:repeat(3,1fr); }
+  .row:nth-child(odd){ background:#ffffff; }
+  .row:nth-child(even){ background:#ebebeb; }
+  .cell{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:2.6px 14px 2.6px 8px;
+    font-size:11px;
+    overflow:hidden;
   }
-  table.report td{
-    padding:3px 10px;
-    border-bottom:1px solid var(--rule);
-    white-space:nowrap;
-    font-variant-numeric:tabular-nums;
-  }
-  table.report td.lbl{
-    color:var(--label);
-    width:17%;
-  }
-  table.report td.val{
-    font-weight:700;
-    width:16.6%;
-    text-align:left;
-  }
-  table.report tr.section td{
-    padding-top:10px;
-    font-weight:700;
-    border-bottom:1px solid #8f959d;
-    background:#f4f5f7;
-  }
-  table.report tr.single td.val{
-    font-weight:700;
-  }
+  .cell .l{ color:#3a3a3a; white-space:nowrap; }
+  .cell .v{ color:#000; font-weight:400; white-space:nowrap; font-variant-numeric:tabular-nums; }
 
   .foot{
-    padding:8px 14px 14px;
-    font-size:10px;
-    color:#8a8f96;
+    padding:6px 8px 10px;
+    font-size:9px;
+    color:#aaadb1;
     text-align:right;
   }
 </style>
 
 <div class="sheet">
-  <div class="sheet-head"><b>Strategy Tester Report</b> &nbsp;·&nbsp; EURUSD, H1 &nbsp;·&nbsp; 2010.01.04 – 2010.11.04</div>
+  <div class="legend"><span class="bal">Баланс</span> <span class="sep">/</span> <span class="eq">Средства</span></div>
 
-  <div class="chart-wrap">
-    <div class="chart-legend">
-      <span><i style="background:var(--blue)"></i>Баланс</span>
-      <span><i style="background:var(--green)"></i>Средства</span>
-    </div>
-    <canvas id="equityChart" width="1600" height="640"></canvas>
-  </div>
+  <canvas id="equityChart" width="1500" height="348"></canvas>
 
-  <table class="report">
-    <tr class="single"><td class="lbl">Initial Deposit</td><td class="val" colspan="5">100 000.00</td></tr>
-
-    <tr><td class="lbl">Bars</td><td class="val">21289</td>
-        <td class="lbl">Ticks</td><td class="val">1 257 170</td>
-        <td class="lbl"></td><td class="val"></td></tr>
-
-    <tr><td class="lbl">Total Net Profit</td><td class="val">26 978.31</td>
-        <td class="lbl">Gross Profit</td><td class="val">54 115.42</td>
-        <td class="lbl">Gross Loss</td><td class="val">-27 137.11</td></tr>
-
-    <tr><td class="lbl">Profit Factor</td><td class="val">1.99</td>
-        <td class="lbl">Expected Payoff</td><td class="val">20.35</td>
-        <td class="lbl">Sharpe Ratio</td><td class="val">0.24</td></tr>
-
-    <tr><td class="lbl">Recovery Factor</td><td class="val">12.98</td>
-        <td class="lbl"></td><td class="val"></td>
-        <td class="lbl"></td><td class="val"></td></tr>
-
-    <tr><td class="lbl">Balance Drawdown Absolute</td><td class="val">556.13</td>
-        <td class="lbl">Balance Drawdown Maximal</td><td class="val">1 294.17 (1.16%)</td>
-        <td class="lbl">Balance Drawdown Relative</td><td class="val">1.23% (1 287.53)</td></tr>
-
-    <tr><td class="lbl">Equity Drawdown Absolute</td><td class="val">487.31</td>
-        <td class="lbl">Equity Drawdown Maximal</td><td class="val">2 078.53 (1.84%)</td>
-        <td class="lbl">Equity Drawdown Relative</td><td class="val">1.84% (2 078.53)</td></tr>
-
-    <tr class="section"><td colspan="6">Trades</td></tr>
-
-    <tr><td class="lbl">Total Trades</td><td class="val">1326</td>
-        <td class="lbl">Short Trades (won %)</td><td class="val">622 (50.16%)</td>
-        <td class="lbl">Long Trades (won %)</td><td class="val">704 (49.72%)</td></tr>
-
-    <tr><td class="lbl">Total Deals</td><td class="val">2658</td>
-        <td class="lbl">Profit Trades (% of total)</td><td class="val">662 (49.92%)</td>
-        <td class="lbl">Loss Trades (% of total)</td><td class="val">664 (50.08%)</td></tr>
-
-    <tr><td class="lbl"></td><td class="val"></td>
-        <td class="lbl">Largest profit trade</td><td class="val">440.20</td>
-        <td class="lbl">Largest loss trade</td><td class="val">-190.65</td></tr>
-
-    <tr><td class="lbl"></td><td class="val"></td>
-        <td class="lbl">Average profit trade</td><td class="val">81.75</td>
-        <td class="lbl">Average loss trade</td><td class="val">-40.87</td></tr>
-
-    <tr><td class="lbl"></td><td class="val"></td>
-        <td class="lbl">Maximum consecutive wins ($)</td><td class="val">17 (1 644.20)</td>
-        <td class="lbl">Maximum consecutive losses ($)</td><td class="val">16 (-619.66)</td></tr>
-
-    <tr><td class="lbl"></td><td class="val"></td>
-        <td class="lbl">Maximal consecutive profit (count)</td><td class="val">2 901.64 (15)</td>
-        <td class="lbl">Maximal consecutive loss (count)</td><td class="val">-747.32 (13)</td></tr>
-  </table>
+  <div class="report" id="report"></div>
 
   <div class="foot">generated report replica</div>
 </div>
 
 <script>
 (function(){
+  // ---------------------------------------------------------------
+  // Table data + render (label/value triples, right-aligned values)
+  // ---------------------------------------------------------------
+  const rows = [
+    [["Initial Deposit","100 000.00"]],
+    [["Bars","21289"],["Ticks","1 257 170"],["",""]],
+    [["Total Net Profit","26 978.31"],["Gross Profit","54 115.42"],["Gross Loss","-27 137.11"]],
+    [["Profit Factor","1.99"],["Expected Payoff","20.35"],["Sharpe Ratio","0.24"]],
+    [["Recovery Factor","12.98"],["",""],["",""]],
+    [["Balance Drawdown Absolute","556.13"],["Balance Drawdown Maximal","1 294.17 (1.16%)"],["Balance Drawdown Relative","1.23% (1 287.53)"]],
+    [["Equity Drawdown Absolute","487.31"],["Equity Drawdown Maximal","2 078.53 (1.84%)"],["Equity Drawdown Relative","1.84% (2 078.53)"]],
+    [["Total Trades","1326"],["Short Trades (won %)","622 (50.16%)"],["Long Trades (won %)","704 (49.72%)"]],
+    [["Total Deals","2658"],["Profit Trades (% of total)","662 (49.92%)"],["Loss Trades (% of total)","664 (50.08%)"]],
+    [["","Largest"],["profit trade","440.20"],["loss trade","-190.65"]],
+    [["","Average"],["profit trade","81.75"],["loss trade","-40.87"]],
+    [["","Maximum"],["consecutive wins ($)","17 (1 644.20)"],["consecutive losses ($)","16 (-619.66)"]],
+    [["","Maximal"],["consecutive profit (count)","2 901.64 (15)"],["consecutive loss (count)","-747.32 (13)"]]
+  ];
+
+  const reportEl = document.getElementById('report');
+  rows.forEach(cols => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    for (let i = 0; i < 3; i++){
+      const [l, v] = cols[i] || ["",""];
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.innerHTML = `<span class="l">${l}</span><span class="v">${v}</span>`;
+      row.appendChild(cell);
+    }
+    reportEl.appendChild(row);
+  });
+
+  // ---------------------------------------------------------------
+  // Chart: equity/balance pane + margin-level pane + date axis strip
+  // ---------------------------------------------------------------
   const cvs = document.getElementById('equityChart');
   const ctx = cvs.getContext('2d');
   const W = cvs.width, H = cvs.height;
-  const mainH = 500;      // equity pane height
-  const gapH = 6;
-  const subH = H - mainH - gapH; // margin-level pane height
-  const padL = 8, padR = 96, padT = 10;
+  const mainH = 284;
+  const marginH = 40;
+  const dateH = H - mainH - marginH; // 24
+  const padL = 6, padR = 92;
 
-  // ---- deterministic PRNG (mulberry32) so the "identical" replica is stable ----
   function mulberry32(seed){
     return function(){
       seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
@@ -189,146 +125,144 @@
   }
   const rnd = mulberry32(20100104);
 
-  // ---- synth balance path: staircase from 1326 trades, net +26978.31 on 100000 ----
-  const N = 1326;
-  const start = 100000, netProfit = 26978.31;
-  const dd = 1294.17; // approx max balance drawdown
-  let bal = start, peak = start;
-  const balance = [start];
-  // weight profile: choppy/flat first ~28%, strong climb after, with a couple of pullbacks
-  for (let i = 1; i <= N; i++){
-    const p = i / N;
-    let bias = 0.5; // average step ~ (netProfit/N) baked in via drift below
-    const drift = netProfit / N;
-    const phase = p < 0.30 ? 0.35 : (p < 0.75 ? 1.35 : 1.05);
-    const noise = (rnd() - 0.5) * 210; // per-trade P/L spread
-    let step = drift * phase + noise;
-    // occasional larger swings for the drawdown notches visible in the source chart
-    if (rnd() < 0.012) step -= 380 + rnd() * 240;
-    if (rnd() < 0.012) step += 300 + rnd() * 200;
-    bal += step;
-    peak = Math.max(peak, bal);
-    balance.push(bal);
+  // shape anchors (fraction of series, value) tracing the source curve
+  const anchors = [
+    [0.00,100000],[0.05,100700],[0.09,101300],[0.13,100850],[0.17,101600],
+    [0.20,102400],[0.24,101650],[0.27,101300],[0.30,102200],[0.32,104500],
+    [0.335,108200],[0.36,109600],[0.40,108850],[0.44,109400],[0.50,110100],
+    [0.55,110400],[0.58,111400],[0.62,112700],[0.66,114100],[0.70,115600],
+    [0.74,116300],[0.78,117200],[0.81,118600],[0.83,120500],[0.855,122600],
+    [0.88,122900],[0.91,122500],[0.93,122650],[0.96,123800],[1.00,127348]
+  ];
+  function anchorAt(t){
+    for (let i = 1; i < anchors.length; i++){
+      if (t <= anchors[i][0]){
+        const [t0,v0] = anchors[i-1], [t1,v1] = anchors[i];
+        const f = (t - t0) / (t1 - t0 || 1);
+        return v0 + (v1 - v0) * f;
+      }
+    }
+    return anchors[anchors.length-1][1];
   }
-  // rescale so it ends exactly on the reported net profit
-  const rawEnd = balance[balance.length - 1];
-  const target = start + netProfit;
-  const k = (target - start) / (rawEnd - start);
-  for (let i = 1; i < balance.length; i++) balance[i] = start + (balance[i] - start) * k;
 
-  // equity: balance plus a light independent noise, occasionally diverging into small dips
-  const equity = balance.map((b, i) => {
-    if (i === 0) return b;
-    const wobble = Math.sin(i * 0.9 + 2) * 60 * (rnd() * 0.6 + 0.4);
-    const dip = (rnd() < 0.05) ? -rnd() * 520 : 0;
-    return b + wobble + dip;
-  });
+  const N = 1326;
+  const balance = [], equity = [];
+  let noise = 0, eWalk = 0;
+  for (let i = 0; i <= N; i++){
+    const t = i / N;
+    noise += (rnd() - 0.5) * 90;
+    noise *= 0.9;
+    const b = anchorAt(t) + noise;
+    balance.push(b);
 
-  const minV = Math.min(...balance, ...equity) - 300;
-  const maxV = Math.max(...balance, ...equity) + 300;
+    const scale = 0.55 + t*t*3.0;
+    eWalk = eWalk*0.80 + (rnd() - 0.5) * 260 * scale;
+    let e = b + eWalk;
+    if (rnd() < 0.05) e += (rnd() - 0.5) * 900 * scale;
+    equity.push(e);
+  }
 
-  // ---- axis labels (13 evenly spaced levels, matches source report) ----
-  const levels = 13;
-  const lo = Math.floor(minV / 100) * 100;
-  const hi = Math.ceil(maxV / 100) * 100;
-  const step = (hi - lo) / (levels - 1);
+  const levels = [127348,122468,117587,112706,107826,102945,98065];
+  const lo = levels[levels.length-1], hi = levels[0];
 
-  const dateLabels = ['2010.01.04','2010.02.16','2010.03.29','2010.04.29','2010.05.17',
-                       '2010.06.25','2010.07.29','2010.08.25','2010.09.21','2010.10.21','2010.11.04'];
+  const allDateLabels = ['2010.01.04','2010.01.15','2010.02.01','2010.02.16','2010.03.04',
+    '2010.03.18','2010.04.01','2010.04.15','2010.04.28','2010.05.17','2010.06.02',
+    '2010.06.15','2010.06.25','2010.07.15','2010.07.28','2010.08.09','2010.08.24',
+    '2010.09.06','2010.09.21','2010.10.07','2010.10.22','2010.11.04'];
+  const dateLabels = allDateLabels.filter((_,i) => i % 2 === 0 || i === allDateLabels.length-1);
 
-  function xFor(i){ return padL + (i / (balance.length - 1)) * (W - padL - padR); }
-  function yFor(v){ return padT + (1 - (v - lo) / (hi - lo)) * (mainH - padT - 6); }
+  function xFor(i, len){ return padL + (i/len) * (W - padL - padR); }
+  function yFor(v){ return (1 - (v - lo)/(hi - lo)) * mainH; }
 
   ctx.clearRect(0,0,W,H);
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0,0,W,H);
 
-  // grid + axis labels
-  ctx.strokeStyle = '#f0cdd4';
+  // dotted grid + axis labels (main pane)
+  ctx.strokeStyle = '#c2c2c2';
   ctx.lineWidth = 1;
-  ctx.font = '20px Tahoma, Arial, sans-serif';
-  ctx.fillStyle = '#8a3b3b';
+  ctx.setLineDash([2,2]);
+  ctx.font = '18px Tahoma, Arial, sans-serif';
+  ctx.fillStyle = '#5a5a5a';
   ctx.textBaseline = 'middle';
-  for (let i = 0; i < levels; i++){
-    const v = lo + step * i;
+  levels.forEach(v => {
     const y = yFor(v);
     ctx.beginPath();
     ctx.moveTo(padL, y);
     ctx.lineTo(W - padR, y);
     ctx.stroke();
-    ctx.fillText(v.toFixed(0), W - padR + 10, y);
-  }
-  ctx.strokeStyle = '#f6dde1';
-  for (let i = 0; i < dateLabels.length; i++){
-    const x = padL + (i / (dateLabels.length - 1)) * (W - padL - padR);
+    ctx.fillText(String(v), W - padR + 10, y === 0 ? 8 : y);
+  });
+  dateLabels.forEach((_, i) => {
+    const x = padL + (i/(dateLabels.length-1)) * (W - padL - padR);
     ctx.beginPath();
-    ctx.moveTo(x, padT);
+    ctx.moveTo(x, 0);
     ctx.lineTo(x, mainH);
     ctx.stroke();
-  }
-  ctx.fillStyle = '#8a3b3b';
-  ctx.font = '18px Tahoma, Arial, sans-serif';
-  ctx.textBaseline = 'top';
-  ctx.textAlign = 'center';
-  for (let i = 0; i < dateLabels.length; i++){
-    const x = padL + (i / (dateLabels.length - 1)) * (W - padL - padR);
-    ctx.fillText(dateLabels[i], Math.min(Math.max(x, padL + 30), W - padR - 30), mainH + 6);
-  }
-  ctx.textAlign = 'left';
+  });
+  ctx.setLineDash([]);
 
-  // balance line (blue, staircase feel via step interpolation)
   function drawLine(series, color, width){
     ctx.beginPath();
     ctx.strokeStyle = color;
     ctx.lineWidth = width;
     ctx.lineJoin = 'round';
-    for (let i = 0; i < series.length; i++){
-      const x = xFor(i), y = yFor(series[i]);
-      if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-    }
+    series.forEach((v,i) => {
+      const x = xFor(i, series.length-1), y = yFor(v);
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
     ctx.stroke();
   }
-  drawLine(equity, '#0a8a2c', 2);
-  drawLine(balance, '#1414ef', 2.4);
+  drawLine(balance, '#2233aa', 2.8);
+  drawLine(equity, '#00b000', 1.3);
 
-  // frame
-  ctx.strokeStyle = '#c9cdd3';
-  ctx.strokeRect(padL, padT, W - padL - padR, mainH - padT);
-
-  // ---- sub pane: margin level (green bars + red line), decorative but grid-true ----
-  const subTop = mainH + gapH;
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, subTop, W, subH);
-  ctx.strokeStyle = '#c9cdd3';
-  ctx.strokeRect(padL, subTop, W - padL - padR, subH - 4);
-
-  const bars = 140;
-  const barW = (W - padL - padR) / bars;
-  let seed2 = mulberry32(4242);
-  for (let i = 0; i < bars; i++){
-    const h = 6 + seed2() * (subH - 20);
-    const x = padL + i * barW;
-    ctx.fillStyle = '#1f9e4a';
-    ctx.globalAlpha = 0.55;
-    ctx.fillRect(x, subTop + subH - 6 - h, Math.max(1, barW - 1), h);
-  }
-  ctx.globalAlpha = 1;
-
-  ctx.strokeStyle = '#e11d1d';
-  ctx.lineWidth = 1.6;
+  // separator between main pane and margin pane
+  ctx.strokeStyle = '#8f959d';
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  let seed3 = mulberry32(99);
-  for (let i = 0; i <= bars; i++){
-    const x = padL + i * barW;
-    const y = subTop + 14 + seed3() * (subH * 0.35);
-    if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-  }
+  ctx.moveTo(0, mainH+1);
+  ctx.lineTo(W, mainH+1);
   ctx.stroke();
 
-  ctx.fillStyle = '#8a3b3b';
-  ctx.font = '18px Tahoma, Arial, sans-serif';
-  ctx.fillText('Уровень маржи', padL + 6, subTop + subH - 14);
-  ctx.fillStyle = '#e11d1d';
-  ctx.fillText('6119%', padL + 150, subTop + subH - 14);
+  // ---- margin-level pane: dense green spike area, no line ----
+  const mBase = mainH + marginH - 4;
+  const bars = 220;
+  const seed2 = mulberry32(4242);
+  ctx.fillStyle = '#00b000';
+  ctx.beginPath();
+  ctx.moveTo(padL, mBase);
+  for (let i = 0; i <= bars; i++){
+    const x = padL + (i/bars) * (W - padL - padR);
+    let h = seed2() * (marginH - 14) * 0.30;
+    if (seed2() < 0.05) h = (marginH - 14) * (0.55 + seed2()*0.45);
+    ctx.lineTo(x, mBase - h);
+  }
+  ctx.lineTo(W - padR, mBase);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#c81414';
+  ctx.font = '15px Tahoma, Arial, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('6119%', W - padR - 2, mainH + 14);
+  ctx.textAlign = 'left';
+
+  // ---- date-axis strip (gray band) ----
+  ctx.fillStyle = '#ebebeb';
+  ctx.fillRect(0, mainH+marginH, W, dateH);
+  ctx.fillStyle = '#6b6b6b';
+  ctx.font = '11px Tahoma, Arial, sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+  const dy = mainH + marginH + dateH/2 + 1;
+  dateLabels.forEach((d,i) => {
+    let x = padL + (i/(dateLabels.length-1)) * (W - padL - padR);
+    if (i===0) { ctx.textAlign='left'; x = padL; }
+    else if (i===dateLabels.length-1) { ctx.textAlign='right'; x = W - padR; }
+    else { ctx.textAlign='center'; }
+    ctx.fillText(d, x, dy);
+  });
+  ctx.textAlign = 'left';
 })();
 </script>
