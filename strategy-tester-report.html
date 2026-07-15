@@ -3,37 +3,117 @@
   :root{
     --page-bg:#e7e9ec;
     --page-bg-dark:#1c1e22;
+    --panel-bg:#f4f5f7;
+    --panel-bg-dark:#26282c;
+    --panel-ink:#1a1a1a;
+    --panel-ink-dark:#e6e7e9;
+    --panel-border:#d3d6da;
+    --panel-border-dark:#3a3d42;
   }
-  @media (prefers-color-scheme: dark){ :root{ --shell-bg:var(--page-bg-dark); } }
-  :root{ --shell-bg:var(--page-bg); }
-  :root[data-theme="dark"]{ --shell-bg:var(--page-bg-dark); }
-  :root[data-theme="light"]{ --shell-bg:var(--page-bg); }
+  @media (prefers-color-scheme: dark){
+    :root{ --shell-bg:var(--page-bg-dark); --panel:var(--panel-bg-dark); --ink:var(--panel-ink-dark); --border:var(--panel-border-dark); }
+  }
+  :root{ --shell-bg:var(--page-bg); --panel:var(--panel-bg); --ink:var(--panel-ink); --border:var(--panel-border); }
+  :root[data-theme="dark"]{ --shell-bg:var(--page-bg-dark); --panel:var(--panel-bg-dark); --ink:var(--panel-ink-dark); --border:var(--panel-border-dark); }
+  :root[data-theme="light"]{ --shell-bg:var(--page-bg); --panel:var(--panel-bg); --ink:var(--panel-ink); --border:var(--panel-border); }
 
   *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
+  html,body{margin:0;padding:0;height:100%;}
   body{
     background:var(--shell-bg);
+    color:var(--ink);
     font-family:Tahoma, "Segoe UI", Arial, sans-serif;
-    padding:20px 10px 40px;
-    display:flex;
-    justify-content:center;
+    min-height:100%;
   }
 
+  .app{ display:flex; flex-direction:column; min-height:100vh; }
+
+  .body{ display:flex; gap:14px; padding:14px; align-items:flex-start; flex:1; flex-wrap:wrap; }
+
+  /* ---- edit panel ---- */
+  .editPanel{
+    width:300px;
+    flex:0 0 300px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:10px;
+    max-height:calc(100vh - 28px);
+    overflow:auto;
+  }
+  .editPanel fieldset{ border:1px solid var(--border); border-radius:5px; margin:0 0 10px; padding:8px; }
+  .editPanel legend{ font-size:11px; font-weight:700; padding:0 4px; }
+  .editPanel label{ display:block; font-size:10px; margin:6px 0 2px; opacity:.85; }
+  .editPanel input[type="text"],
+  .editPanel input[type="number"],
+  .editPanel input[type="date"],
+  .editPanel textarea{
+    width:100%; font-size:11px; font-family:inherit; padding:4px 6px;
+    border:1px solid var(--border); border-radius:4px; background:#fff; color:#111;
+  }
+  .editPanel textarea{ height:64px; resize:vertical; font-family:monospace; }
+  .fieldRow{ display:flex; gap:4px; margin-bottom:4px; }
+  .fieldRow input:first-child{ flex:1.3; }
+  .fieldRow input:last-child{ flex:1; text-align:right; }
+  .editPanel.hidden{ display:none; }
+
+  /* ---- stage (fullscreen target) ---- */
+  .stage{
+    flex:1 1 640px;
+    min-width:320px;
+    background:var(--shell-bg);
+  }
+  .stage:fullscreen{
+    background:var(--shell-bg);
+    padding:14px;
+    overflow:auto;
+    width:100vw; height:100vh;
+  }
+  :fullscreen #btnEdit{ display:none; }
+
+  .toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:6px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:6px 8px;
+    margin-bottom:10px;
+    position:sticky;
+    top:0;
+    z-index:5;
+  }
+  .toolbar button{
+    font:11px Tahoma, Arial, sans-serif;
+    font-weight:700;
+    padding:5px 10px;
+    border:1px solid var(--border);
+    border-radius:4px;
+    background:#fff;
+    color:#222;
+    cursor:pointer;
+  }
+  .toolbar button:hover{ background:#eef1f5; }
+  .toolbar .zoomGroup{ display:flex; align-items:center; gap:4px; }
+  .toolbar .zoomGroup span{ font-size:11px; font-weight:700; min-width:38px; text-align:center; display:inline-block; }
+  .toolbar .spacer{ flex:1; }
+
+  .sheetScroll{
+    overflow:auto;
+    border:1px solid var(--border);
+    background:#d8dadd;
+    padding:16px;
+    border-radius:6px;
+  }
   .sheet{
-    width:100%;
-    max-width:920px;
+    width:920px;
     background:#ffffff;
     color:#1a1a1a;
+    margin:0 auto;
+    transform-origin:top left;
   }
-
-  .legend{
-    font-size:10px;
-    font-weight:700;
-    padding:2px 6px 1px;
-  }
-  .legend .bal{color:#3333cc;}
-  .legend .sep{color:#8a8a8a;}
-  .legend .eq{color:#009a00;}
 
   canvas{display:block;width:100%;}
 
@@ -59,24 +139,73 @@
     color:#aaadb1;
     text-align:right;
   }
+
+  @media (max-width:900px){
+    .body{ flex-direction:column; }
+    .editPanel{ width:100%; flex:0 0 auto; max-height:none; }
+  }
 </style>
 
-<div class="sheet">
-  <div class="legend"><span class="bal">Баланс</span> <span class="sep">/</span> <span class="eq">Средства</span></div>
+<div class="app">
+  <div class="body">
+    <form class="editPanel" id="editPanel" onsubmit="return false;">
+      <fieldset>
+        <legend>Chart</legend>
+        <label>Initial Deposit<input type="number" id="cfgInitial" step="0.01"></label>
+        <label>Final Equity<input type="number" id="cfgFinal" step="0.01"></label>
+        <label>Start Date<input type="date" id="cfgStart"></label>
+        <label>End Date<input type="date" id="cfgEnd"></label>
+        <label>Margin Level Label<input type="text" id="cfgMargin"></label>
+        <label>Custom curve (optional) — one "balance,equity" pair per line, leave empty to auto-generate
+          <textarea id="cfgCurve" placeholder="100000,100000&#10;100250,100480&#10;..."></textarea>
+        </label>
+      </fieldset>
+      <fieldset>
+        <legend>Report Table</legend>
+        <div id="fieldsContainer"></div>
+      </fieldset>
+    </form>
 
-  <canvas id="equityChart" width="1500" height="348"></canvas>
+    <div class="stage" id="stage">
+      <div class="toolbar" id="toolbar">
+        <button type="button" id="btnEdit">Edit Data</button>
+        <button type="button" id="btnFullscreen">⛶ Fullscreen</button>
+        <span class="zoomGroup">
+          <button type="button" id="zoomOut">−</button>
+          <span id="zoomLabel">100%</span>
+          <button type="button" id="zoomIn">+</button>
+        </span>
+        <button type="button" id="zoomReset">Reset Zoom</button>
+        <span class="spacer"></span>
+        <button type="button" id="btnDownload">⬇ Download PNG</button>
+      </div>
 
-  <div class="report" id="report"></div>
-
-  <div class="foot">generated report replica</div>
+      <div class="sheetScroll" id="sheetScroll">
+        <div class="sheet" id="sheet">
+          <canvas id="equityChart" width="1500" height="348"></canvas>
+          <div class="report" id="report"></div>
+          <div class="foot">generated report replica</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
 (function(){
   // ---------------------------------------------------------------
-  // Table data + render (label/value triples, right-aligned values)
+  // State
   // ---------------------------------------------------------------
-  const rows = [
+  let cfg = {
+    initialDeposit: 100000,
+    finalEquity: 127348,
+    dateStart: '2025-09-04',
+    dateEnd: '2026-07-04',
+    marginLabel: '6119%',
+    curveText: ''
+  };
+
+  let rows = [
     [["Initial Deposit","100 000.00"]],
     [["Bars","21289"],["Ticks","1 257 170"],["",""]],
     [["Total Net Profit","26 978.31"],["Gross Profit","54 115.42"],["Gross Loss","-27 137.11"]],
@@ -92,29 +221,58 @@
     [["","Maximal"],["consecutive profit (count)","2 901.64 (15)"],["consecutive loss (count)","-747.32 (13)"]]
   ];
 
-  const reportEl = document.getElementById('report');
-  rows.forEach(cols => {
-    const row = document.createElement('div');
-    row.className = 'row';
-    for (let i = 0; i < 3; i++){
-      const [l, v] = cols[i] || ["",""];
-      const cell = document.createElement('div');
-      cell.className = 'cell';
-      cell.innerHTML = `<span class="l">${l}</span><span class="v">${v}</span>`;
-      row.appendChild(cell);
-    }
-    reportEl.appendChild(row);
-  });
+  // ---------------------------------------------------------------
+  // Table render + editable field inputs
+  // ---------------------------------------------------------------
+  function renderTable(){
+    const reportEl = document.getElementById('report');
+    reportEl.innerHTML = '';
+    rows.forEach(cols => {
+      const row = document.createElement('div');
+      row.className = 'row';
+      for (let i = 0; i < 3; i++){
+        const [l, v] = cols[i] || ["",""];
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        const ls = document.createElement('span'); ls.className='l'; ls.textContent = l;
+        const vs = document.createElement('span'); vs.className='v'; vs.textContent = v;
+        cell.appendChild(ls); cell.appendChild(vs);
+        row.appendChild(cell);
+      }
+      reportEl.appendChild(row);
+    });
+  }
+
+  function buildFieldInputs(){
+    const container = document.getElementById('fieldsContainer');
+    container.innerHTML = '';
+    rows.forEach((cols, ri) => {
+      cols.forEach((pair, ci) => {
+        const [l, v] = pair;
+        if (l === '' && v === '') return;
+        const wrap = document.createElement('div');
+        wrap.className = 'fieldRow';
+        const li = document.createElement('input');
+        li.type = 'text'; li.value = l; li.placeholder = 'label';
+        const vi = document.createElement('input');
+        vi.type = 'text'; vi.value = v; vi.placeholder = 'value';
+        li.addEventListener('input', () => { rows[ri][ci][0] = li.value; renderTable(); });
+        vi.addEventListener('input', () => { rows[ri][ci][1] = vi.value; renderTable(); });
+        wrap.appendChild(li); wrap.appendChild(vi);
+        container.appendChild(wrap);
+      });
+    });
+  }
 
   // ---------------------------------------------------------------
-  // Chart: equity/balance pane + margin-level pane + date axis strip
+  // Chart
   // ---------------------------------------------------------------
   const cvs = document.getElementById('equityChart');
   const ctx = cvs.getContext('2d');
   const W = cvs.width, H = cvs.height;
   const mainH = 284;
   const marginH = 40;
-  const dateH = H - mainH - marginH; // 24
+  const dateH = H - mainH - marginH;
   const padL = 6, padR = 92;
 
   function mulberry32(seed){
@@ -125,9 +283,7 @@
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
   }
-  const rnd = mulberry32(20100104);
 
-  // shape anchors (fraction of series, value) tracing the source curve
   const anchors = [
     [0.00,100000],[0.05,100700],[0.09,101300],[0.13,100850],[0.17,101600],
     [0.20,102400],[0.24,101650],[0.27,101300],[0.30,102200],[0.32,104500],
@@ -136,6 +292,7 @@
     [0.74,116300],[0.78,117200],[0.81,118600],[0.83,120500],[0.855,122600],
     [0.88,122900],[0.91,122500],[0.93,122650],[0.96,123800],[1.00,127348]
   ];
+  const BASE_START = 100000, BASE_END = 127348;
   function anchorAt(t){
     for (let i = 1; i < anchors.length; i++){
       if (t <= anchors[i][0]){
@@ -147,124 +304,271 @@
     return anchors[anchors.length-1][1];
   }
 
-  const N = 1326;
-  const balance = [], equity = [];
-  let noise = 0, eWalk = 0;
-  for (let i = 0; i <= N; i++){
-    const t = i / N;
-    noise += (rnd() - 0.5) * 90;
-    noise *= 0.9;
-    const b = anchorAt(t) + noise;
-    balance.push(b);
-
-    const scale = 0.55 + t*t*3.0;
-    eWalk = eWalk*0.80 + (rnd() - 0.5) * 260 * scale;
-    let e = b + eWalk;
-    if (rnd() < 0.05) e += (rnd() - 0.5) * 900 * scale;
-    equity.push(e);
+  function generateCurve(){
+    if (cfg.curveText.trim()){
+      const lines = cfg.curveText.trim().split('\n').map(l => l.split(',').map(s => parseFloat(s.trim())));
+      const balance = lines.map(l => l[0]).filter(v => !isNaN(v));
+      const equity = lines.map(l => (l.length > 1 && !isNaN(l[1])) ? l[1] : l[0]).slice(0, balance.length);
+      return { balance, equity };
+    }
+    const rnd = mulberry32(20100104);
+    const scaleFactor = (cfg.finalEquity - cfg.initialDeposit) / (BASE_END - BASE_START || 1);
+    const scaleV = v => cfg.initialDeposit + (v - BASE_START) * scaleFactor;
+    const N = 1326;
+    const balance = [], equity = [];
+    let noise = 0, eWalk = 0;
+    for (let i = 0; i <= N; i++){
+      const t = i / N;
+      noise += (rnd() - 0.5) * 90 * scaleFactor;
+      noise *= 0.9;
+      const b = scaleV(anchorAt(t)) + noise;
+      balance.push(b);
+      const scale = (0.55 + t*t*3.0) * scaleFactor;
+      eWalk = eWalk*0.80 + (rnd() - 0.5) * 260 * scale;
+      let e = b + eWalk;
+      if (rnd() < 0.05) e += (rnd() - 0.5) * 900 * scale;
+      equity.push(e);
+    }
+    return { balance, equity };
   }
 
-  const levels = [127348,122468,117587,112706,107826,102945,98065];
-  const lo = levels[levels.length-1], hi = levels[0];
+  function niceLevels(min, max, count){
+    if (min === max){ min -= 1; max += 1; }
+    const levels = [];
+    for (let i = 0; i < count; i++) levels.push(Math.round(max - (max-min) * (i/(count-1))));
+    return levels;
+  }
 
-  const allDateLabels = ['2025.09.04','2025.09.15','2025.10.01','2025.10.16','2025.11.04',
-    '2025.11.18','2025.12.01','2025.12.15','2025.12.28','2026.01.17','2026.02.02',
-    '2026.02.15','2026.02.25','2026.03.15','2026.03.28','2026.04.09','2026.04.24',
-    '2026.05.06','2026.05.21','2026.06.07','2026.06.22','2026.07.04'];
-  const dateLabels = allDateLabels.filter((_,i) => i % 2 === 0 || i === allDateLabels.length-1);
+  function formatDate(d){
+    const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+    return `${y}.${m}.${day}`;
+  }
+  function buildDateLabels(startStr, endStr, count){
+    const start = new Date(startStr), end = new Date(endStr);
+    const labels = [];
+    for (let i = 0; i < count; i++){
+      const t = i/(count-1);
+      const d = new Date(start.getTime() + (end.getTime()-start.getTime())*t);
+      labels.push(formatDate(d));
+    }
+    return labels;
+  }
 
-  function xFor(i, len){ return padL + (i/len) * (W - padL - padR); }
-  function yFor(v){ return (1 - (v - lo)/(hi - lo)) * mainH; }
+  function renderChart(){
+    const { balance, equity } = generateCurve();
+    if (!balance.length) return;
+    const dateLabels = buildDateLabels(cfg.dateStart || '2025-01-01', cfg.dateEnd || '2025-12-31', 12);
+    const allV = balance.concat(equity);
+    const levels = niceLevels(Math.min(...allV), Math.max(...allV), 7);
+    const lo = levels[levels.length-1], hi = levels[0];
 
-  ctx.clearRect(0,0,W,H);
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0,0,W,H);
+    function xFor(i, len){ return padL + (i/len) * (W - padL - padR); }
+    function yFor(v){ return (1 - (v - lo)/(hi - lo || 1)) * mainH; }
 
-  // dotted grid + axis labels (main pane)
-  ctx.strokeStyle = '#c2c2c2';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([2,2]);
-  ctx.font = 'bold 18px Tahoma, Arial, sans-serif';
-  ctx.fillStyle = '#4a4a4a';
-  ctx.textBaseline = 'middle';
-  levels.forEach(v => {
-    const y = yFor(v);
-    ctx.beginPath();
-    ctx.moveTo(padL, y);
-    ctx.lineTo(W - padR, y);
-    ctx.stroke();
-    ctx.fillText(String(v), W - padR + 10, y === 0 ? 8 : y);
-  });
-  dateLabels.forEach((_, i) => {
-    const x = padL + (i/(dateLabels.length-1)) * (W - padL - padR);
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, mainH);
-    ctx.stroke();
-  });
-  ctx.setLineDash([]);
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,W,H);
 
-  function drawLine(series, color, width){
-    ctx.beginPath();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = width;
-    ctx.lineJoin = 'round';
-    series.forEach((v,i) => {
-      const x = xFor(i, series.length-1), y = yFor(v);
-      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    // legend (drawn onto the canvas so PNG export is self-contained)
+    ctx.textBaseline = 'top';
+    ctx.font = 'bold 16px Tahoma, Arial, sans-serif';
+    ctx.fillStyle = '#3333cc'; ctx.textAlign='left';
+    ctx.fillText('Баланс', 6, 2);
+    const balW = ctx.measureText('Баланс').width;
+    ctx.fillStyle = '#8a8a8a';
+    ctx.fillText(' / ', 6+balW, 2);
+    const sepW = ctx.measureText(' / ').width;
+    ctx.fillStyle = '#009a00';
+    ctx.fillText('Средства', 6+balW+sepW, 2);
+
+    // dotted grid + axis labels
+    ctx.strokeStyle = '#c2c2c2';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2,2]);
+    ctx.font = 'bold 18px Tahoma, Arial, sans-serif';
+    ctx.fillStyle = '#4a4a4a';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    levels.forEach(v => {
+      const y = yFor(v);
+      ctx.beginPath();
+      ctx.moveTo(padL, y);
+      ctx.lineTo(W - padR, y);
+      ctx.stroke();
+      ctx.fillText(String(v), W - padR + 10, Math.max(y, 10));
     });
+    dateLabels.forEach((_, i) => {
+      const x = padL + (i/(dateLabels.length-1)) * (W - padL - padR);
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, mainH);
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    function drawLine(series, color, width){
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.lineJoin = 'round';
+      series.forEach((v,i) => {
+        const x = xFor(i, series.length-1), y = yFor(v);
+        if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+    }
+    drawLine(balance, '#2233aa', 2.8);
+    drawLine(equity, '#00b000', 1.3);
+
+    // separator
+    ctx.strokeStyle = '#8f959d';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, mainH+1);
+    ctx.lineTo(W, mainH+1);
     ctx.stroke();
+
+    // margin-level pane
+    const mBase = mainH + marginH - 4;
+    const bars = 220;
+    const seed2 = mulberry32(4242);
+    ctx.fillStyle = '#00b000';
+    ctx.beginPath();
+    ctx.moveTo(padL, mBase);
+    for (let i = 0; i <= bars; i++){
+      const x = padL + (i/bars) * (W - padL - padR);
+      let h = seed2() * (marginH - 14) * 0.30;
+      if (seed2() < 0.05) h = (marginH - 14) * (0.55 + seed2()*0.45);
+      ctx.lineTo(x, mBase - h);
+    }
+    ctx.lineTo(W - padR, mBase);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#c81414';
+    ctx.font = 'bold 15px Tahoma, Arial, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(cfg.marginLabel || '', W - padR - 2, mainH + 14);
+    ctx.textAlign = 'left';
+
+    // date-axis strip
+    ctx.fillStyle = '#ebebeb';
+    ctx.fillRect(0, mainH+marginH, W, dateH);
+    ctx.fillStyle = '#555555';
+    ctx.font = 'bold 12px Tahoma, Arial, sans-serif';
+    ctx.textBaseline = 'middle';
+    const dy = mainH + marginH + dateH/2 + 1;
+    dateLabels.forEach((d,i) => {
+      let x = padL + (i/(dateLabels.length-1)) * (W - padL - padR);
+      if (i===0) { ctx.textAlign='left'; x = padL; }
+      else if (i===dateLabels.length-1) { ctx.textAlign='right'; x = W - padR; }
+      else { ctx.textAlign='center'; }
+      ctx.fillText(d, x, dy);
+    });
+    ctx.textAlign = 'left';
   }
-  drawLine(balance, '#2233aa', 2.8);
-  drawLine(equity, '#00b000', 1.3);
 
-  // separator between main pane and margin pane
-  ctx.strokeStyle = '#8f959d';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(0, mainH+1);
-  ctx.lineTo(W, mainH+1);
-  ctx.stroke();
-
-  // ---- margin-level pane: dense green spike area, no line ----
-  const mBase = mainH + marginH - 4;
-  const bars = 220;
-  const seed2 = mulberry32(4242);
-  ctx.fillStyle = '#00b000';
-  ctx.beginPath();
-  ctx.moveTo(padL, mBase);
-  for (let i = 0; i <= bars; i++){
-    const x = padL + (i/bars) * (W - padL - padR);
-    let h = seed2() * (marginH - 14) * 0.30;
-    if (seed2() < 0.05) h = (marginH - 14) * (0.55 + seed2()*0.45);
-    ctx.lineTo(x, mBase - h);
+  // ---------------------------------------------------------------
+  // Config form wiring
+  // ---------------------------------------------------------------
+  function bindNumber(id, key){
+    const el = document.getElementById(id);
+    el.value = cfg[key];
+    el.addEventListener('input', () => { cfg[key] = parseFloat(el.value) || 0; renderChart(); });
   }
-  ctx.lineTo(W - padR, mBase);
-  ctx.closePath();
-  ctx.fill();
+  function bindText(id, key){
+    const el = document.getElementById(id);
+    el.value = cfg[key];
+    el.addEventListener('input', () => { cfg[key] = el.value; renderChart(); });
+  }
+  bindNumber('cfgInitial', 'initialDeposit');
+  bindNumber('cfgFinal', 'finalEquity');
+  bindText('cfgStart', 'dateStart');
+  bindText('cfgEnd', 'dateEnd');
+  bindText('cfgMargin', 'marginLabel');
+  bindText('cfgCurve', 'curveText');
 
-  ctx.fillStyle = '#c81414';
-  ctx.font = 'bold 15px Tahoma, Arial, sans-serif';
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'alphabetic';
-  ctx.fillText('6119%', W - padR - 2, mainH + 14);
-  ctx.textAlign = 'left';
-
-  // ---- date-axis strip (gray band) ----
-  ctx.fillStyle = '#ebebeb';
-  ctx.fillRect(0, mainH+marginH, W, dateH);
-  ctx.fillStyle = '#555555';
-  ctx.font = 'bold 12px Tahoma, Arial, sans-serif';
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'center';
-  const dy = mainH + marginH + dateH/2 + 1;
-  dateLabels.forEach((d,i) => {
-    let x = padL + (i/(dateLabels.length-1)) * (W - padL - padR);
-    if (i===0) { ctx.textAlign='left'; x = padL; }
-    else if (i===dateLabels.length-1) { ctx.textAlign='right'; x = W - padR; }
-    else { ctx.textAlign='center'; }
-    ctx.fillText(d, x, dy);
+  // ---------------------------------------------------------------
+  // Toolbar: edit toggle, fullscreen, zoom, download
+  // ---------------------------------------------------------------
+  const editPanel = document.getElementById('editPanel');
+  document.getElementById('btnEdit').addEventListener('click', () => {
+    editPanel.classList.toggle('hidden');
   });
-  ctx.textAlign = 'left';
+
+  const stage = document.getElementById('stage');
+  document.getElementById('btnFullscreen').addEventListener('click', () => {
+    if (!document.fullscreenElement) stage.requestFullscreen().catch(()=>{});
+    else document.exitFullscreen();
+  });
+
+  let zoom = 1;
+  const sheet = document.getElementById('sheet');
+  const zoomLabel = document.getElementById('zoomLabel');
+  function setZoom(z){
+    zoom = Math.min(2.5, Math.max(0.4, z));
+    sheet.style.zoom = zoom;
+    zoomLabel.textContent = Math.round(zoom*100) + '%';
+  }
+  document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom + 0.1));
+  document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom - 0.1));
+  document.getElementById('zoomReset').addEventListener('click', () => setZoom(1));
+  document.getElementById('sheetScroll').addEventListener('wheel', (e) => {
+    if (e.ctrlKey || e.metaKey){
+      e.preventDefault();
+      setZoom(zoom + (e.deltaY < 0 ? 0.1 : -0.1));
+    }
+  }, { passive:false });
+
+  document.getElementById('btnDownload').addEventListener('click', () => {
+    const rowH = 34;
+    const outW = 1500;
+    const tableH = rows.length * rowH + 24;
+    const out = document.createElement('canvas');
+    out.width = outW;
+    out.height = H + tableH;
+    const octx = out.getContext('2d');
+    octx.fillStyle = '#ffffff';
+    octx.fillRect(0,0,out.width,out.height);
+    octx.drawImage(cvs, 0, 0);
+
+    let y = H;
+    const colW = outW / 3;
+    rows.forEach((cols, ri) => {
+      octx.fillStyle = ri % 2 === 0 ? '#ffffff' : '#ebebeb';
+      octx.fillRect(0, y, outW, rowH);
+      for (let c = 0; c < 3; c++){
+        const [l, v] = cols[c] || ["",""];
+        const x0 = c * colW;
+        octx.textBaseline = 'middle';
+        octx.fillStyle = '#333333';
+        octx.font = '600 20px Tahoma, Arial, sans-serif';
+        octx.textAlign = 'left';
+        octx.fillText(l, x0 + 16, y + rowH/2);
+        octx.fillStyle = '#000000';
+        octx.font = 'bold 20px Tahoma, Arial, sans-serif';
+        octx.textAlign = 'right';
+        octx.fillText(v, x0 + colW - 16, y + rowH/2);
+      }
+      y += rowH;
+    });
+    octx.fillStyle = '#aaaaaa';
+    octx.font = '16px Tahoma, Arial, sans-serif';
+    octx.textAlign = 'right';
+    octx.fillText('generated report replica', outW - 16, y + 18);
+
+    const link = document.createElement('a');
+    link.download = 'strategy-tester-report.png';
+    link.href = out.toDataURL('image/png');
+    link.click();
+  });
+
+  // ---------------------------------------------------------------
+  // Init
+  // ---------------------------------------------------------------
+  renderTable();
+  buildFieldInputs();
+  renderChart();
 })();
 </script>
