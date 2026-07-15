@@ -21,13 +21,14 @@
 
   .sheet{
     width:100%;
-    max-width:750px;
+    max-width:920px;
     background:#ffffff;
     color:#1a1a1a;
   }
 
   .legend{
     font-size:10px;
+    font-weight:700;
     padding:2px 6px 1px;
   }
   .legend .bal{color:#3333cc;}
@@ -44,12 +45,13 @@
     display:flex;
     justify-content:space-between;
     align-items:baseline;
-    padding:2.6px 14px 2.6px 8px;
+    gap:10px;
+    padding:3px 14px 3px 8px;
     font-size:11px;
     overflow:hidden;
   }
-  .cell .l{ color:#3a3a3a; white-space:nowrap; }
-  .cell .v{ color:#000; font-weight:400; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .cell .l{ color:#333; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cell .v{ color:#000; font-weight:700; white-space:nowrap; flex:0 0 auto; font-variant-numeric:tabular-nums; }
 
   .foot{
     padding:6px 8px 10px;
@@ -165,10 +167,10 @@
   const levels = [127348,122468,117587,112706,107826,102945,98065];
   const lo = levels[levels.length-1], hi = levels[0];
 
-  const allDateLabels = ['2010.01.04','2010.01.15','2010.02.01','2010.02.16','2010.03.04',
-    '2010.03.18','2010.04.01','2010.04.15','2010.04.28','2010.05.17','2010.06.02',
-    '2010.06.15','2010.06.25','2010.07.15','2010.07.28','2010.08.09','2010.08.24',
-    '2010.09.06','2010.09.21','2010.10.07','2010.10.22','2010.11.04'];
+  const allDateLabels = ['2025.09.04','2025.09.15','2025.10.01','2025.10.16','2025.11.04',
+    '2025.11.18','2025.12.01','2025.12.15','2025.12.28','2026.01.17','2026.02.02',
+    '2026.02.15','2026.02.25','2026.03.15','2026.03.28','2026.04.09','2026.04.24',
+    '2026.05.06','2026.05.21','2026.06.07','2026.06.22','2026.07.04'];
   const dateLabels = allDateLabels.filter((_,i) => i % 2 === 0 || i === allDateLabels.length-1);
 
   function xFor(i, len){ return padL + (i/len) * (W - padL - padR); }
@@ -182,8 +184,8 @@
   ctx.strokeStyle = '#c2c2c2';
   ctx.lineWidth = 1;
   ctx.setLineDash([2,2]);
-  ctx.font = '18px Tahoma, Arial, sans-serif';
-  ctx.fillStyle = '#5a5a5a';
+  ctx.font = 'bold 18px Tahoma, Arial, sans-serif';
+  ctx.fillStyle = '#4a4a4a';
   ctx.textBaseline = 'middle';
   levels.forEach(v => {
     const y = yFor(v);
@@ -242,7 +244,7 @@
   ctx.fill();
 
   ctx.fillStyle = '#c81414';
-  ctx.font = '15px Tahoma, Arial, sans-serif';
+  ctx.font = 'bold 15px Tahoma, Arial, sans-serif';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'alphabetic';
   ctx.fillText('6119%', W - padR - 2, mainH + 14);
@@ -251,8 +253,8 @@
   // ---- date-axis strip (gray band) ----
   ctx.fillStyle = '#ebebeb';
   ctx.fillRect(0, mainH+marginH, W, dateH);
-  ctx.fillStyle = '#6b6b6b';
-  ctx.font = '11px Tahoma, Arial, sans-serif';
+  ctx.fillStyle = '#555555';
+  ctx.font = 'bold 12px Tahoma, Arial, sans-serif';
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'center';
   const dy = mainH + marginH + dateH/2 + 1;
