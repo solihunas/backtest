@@ -23,7 +23,7 @@
   body{
     background:var(--shell-bg); color:var(--ink);
     font-family:Tahoma, "Segoe UI", Arial, sans-serif;
-    padding-bottom:64px; /* room for sticky action bar */
+    padding-bottom:60px; /* room for sticky action bar */
   }
 
   .topbar{
@@ -35,8 +35,31 @@
   .syncBadge.dirty{ background:#fde3b0; color:#7a4a00; }
   .syncBadge.synced{ background:#c8ecc8; color:#1a5e1a; }
 
-  .chartWrap{ padding:8px; }
+  .chartWrap{ padding:8px 8px 0; }
   .chartWrap canvas{ display:block; width:100%; background:#fff; border:1px solid var(--border); border-radius:4px; }
+
+  .curveTools{
+    margin:8px; padding:8px; background:var(--panel); border:1px solid var(--border); border-radius:6px;
+  }
+  .curveTools .grpLabel{
+    font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em;
+    opacity:.7; margin:6px 0 4px;
+  }
+  .curveTools .grpLabel:first-child{ margin-top:0; }
+  .btnRow{ display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .btnRow button{
+    font:12px Tahoma, Arial, sans-serif; font-weight:700;
+    padding:10px 4px; border-radius:6px; border:1px solid var(--border);
+    background:#fff; color:#222; cursor:pointer;
+  }
+  .btnRow.balance button{ border-color:#2233aa55; }
+  .btnRow.equity button{ border-color:#00963a55; }
+  #btnUndo{
+    width:100%; margin-top:8px; font:12px Tahoma, Arial, sans-serif; font-weight:700;
+    padding:9px 4px; border-radius:6px; border:1px solid var(--border);
+    background:#fff; color:#222; cursor:pointer;
+  }
+  #btnUndo:disabled{ opacity:.4; }
 
   .summary{
     display:grid; grid-template-columns:repeat(auto-fit, minmax(120px,1fr));
@@ -72,21 +95,29 @@
     font-size:13px; padding:6px 7px; border:1px solid var(--border); border-radius:5px;
     background:#fff; color:#111; width:100%;
   }
+  .hint{ font-size:10px; opacity:.7; padding:0 10px 8px; line-height:1.4; }
+  textarea#curveCsv{
+    width:100%; height:70px; font-size:11px; font-family:monospace;
+    padding:6px 7px; border:1px solid var(--border); border-radius:5px;
+    background:#fff; color:#111; margin:0 10px 8px; box-sizing:border-box;
+  }
+  .csvWrap{ padding:0 0 4px; }
+  .csvWrap button{
+    margin:0 10px 10px; font:12px Tahoma, Arial, sans-serif; font-weight:700;
+    padding:9px 10px; border-radius:6px; border:1px solid var(--border);
+    background:#fff; color:#222; cursor:pointer;
+  }
 
   .actionBar{
     position:sticky; bottom:0; left:0; right:0;
-    display:grid; grid-template-columns:repeat(4,1fr);
-    gap:6px; padding:8px; background:var(--panel);
+    padding:8px; background:var(--panel);
     border-top:1px solid var(--border); z-index:10;
   }
-  .actionBar button, .actionBar a{
-    font:12px Tahoma, Arial, sans-serif; font-weight:700;
-    padding:11px 4px; border-radius:6px; border:1px solid var(--border);
-    background:#fff; color:#222; text-align:center; text-decoration:none;
-    cursor:pointer;
+  .actionBar button{
+    width:100%; font:13px Tahoma, Arial, sans-serif; font-weight:700;
+    padding:13px 4px; border-radius:6px; border:1px solid #2233aa;
+    background:#2233aa; color:#fff; cursor:pointer;
   }
-  .actionBar .sync{ background:#2233aa; color:#fff; border-color:#2233aa; }
-  .actionBar button:disabled{ opacity:.4; }
   .previewLink{
     display:block; margin:0 8px 10px; text-align:center;
     background:#00963a; color:#fff; font-weight:700; font-size:13px;
@@ -102,6 +133,20 @@
   </div>
 
   <div class="chartWrap"><canvas id="chart" width="1500" height="348"></canvas></div>
+
+  <div class="curveTools">
+    <div class="grpLabel">Kedua garis — Balance (biru) &amp; Equity (hijau)</div>
+    <div class="btnRow balance">
+      <button type="button" id="btnRandom">🎲 Acak</button>
+      <button type="button" id="btnSmooth">〰 Haluskan</button>
+    </div>
+    <div class="grpLabel">Equity saja</div>
+    <div class="btnRow equity">
+      <button type="button" id="btnPull">🧲 Dekatkan ke Balance</button>
+      <button type="button" id="btnRandomEquity">🎲 Acak Equity</button>
+    </div>
+    <button type="button" id="btnUndo" disabled>↶ Undo langkah terakhir</button>
+  </div>
 
   <div class="summary" id="summary"></div>
 
@@ -156,36 +201,39 @@
     </details>
 
     <details>
-      <summary>Drawdown</summary>
-      <div class="grid2">
-        <div class="field"><label>Balance DD Absolute</label><input type="number" id="qsBalanceDDAbsolute" step="0.01"></div>
-        <div class="field"><label>Balance DD Maximal ($)</label><input type="number" id="qsBalanceDDMaxAmount" step="0.01"></div>
-        <div class="field"><label>Balance DD Maximal (%)</label><input type="number" id="qsBalanceDDMaxPct" step="0.01"></div>
-        <div class="field"><label>Balance DD Relative (%)</label><input type="number" id="qsBalanceDDRelPct" step="0.01"></div>
-        <div class="field"><label>Balance DD Relative ($)</label><input type="number" id="qsBalanceDDRelAmount" step="0.01"></div>
-        <div class="field"><label>Equity DD Absolute</label><input type="number" id="qsEquityDDAbsolute" step="0.01"></div>
-        <div class="field"><label>Equity DD Maximal ($)</label><input type="number" id="qsEquityDDMaxAmount" step="0.01"></div>
-        <div class="field"><label>Equity DD Maximal (%)</label><input type="number" id="qsEquityDDMaxPct" step="0.01"></div>
-        <div class="field"><label>Equity DD Relative (%)</label><input type="number" id="qsEquityDDRelPct" step="0.01"></div>
-        <div class="field"><label>Equity DD Relative ($)</label><input type="number" id="qsEquityDDRelAmount" step="0.01"></div>
+      <summary>Drawdown (otomatis dari kurva — lihat tile di atas &amp; tabel Preview)</summary>
+      <div class="hint">
+        Balance/Equity Drawdown Absolute, Maximal &amp; Relative <b>tidak diketik manual</b> —
+        semua dihitung otomatis dari bentuk kurva Balance/Equity di atas.
+        Ubah kurva pakai Acak / Haluskan / Dekatkan / import CSV, angkanya ikut berubah otomatis.
       </div>
     </details>
 
     <details>
-      <summary>Chart — tanggal & label</summary>
+      <summary>Chart — tanggal &amp; label</summary>
       <div class="grid2">
         <div class="field"><label>Start Date</label><input type="date" id="cfgStart"></div>
         <div class="field"><label>End Date</label><input type="date" id="cfgEnd"></div>
         <div class="field"><label>Margin Level Label</label><input type="text" id="cfgMargin"></div>
       </div>
     </details>
+
+    <details>
+      <summary>Import Curve Manual (opsional)</summary>
+      <div class="hint">
+        Tempel data kurva persis (misal dari backtest asli): satu baris per titik,
+        format <code>balance,equity</code>. Kolom equity boleh dikosongkan (ikut balance).
+        Ini akan <b>mengganti seluruh kurva</b> yang sekarang.
+      </div>
+      <div class="csvWrap">
+        <textarea id="curveCsv" placeholder="100000,100000&#10;100250,100480&#10;100500,100120&#10;..."></textarea>
+        <button type="button" id="btnImportCurve">⬆ Terapkan Curve Ini</button>
+      </div>
+    </details>
   </form>
 
   <div class="actionBar">
-    <button type="button" class="sync" id="btnSync">Sinkronkan</button>
-    <button type="button" id="btnRandom">Acak</button>
-    <button type="button" id="btnSmooth">Haluskan</button>
-    <button type="button" id="btnUndo" disabled>Undo</button>
+    <button type="button" id="btnSync">Sinkronkan</button>
   </div>
 
 <script src="report-core.js"></script>
@@ -209,17 +257,26 @@
     badge.className = 'syncBadge ' + (v ? 'dirty' : 'synced');
   }
 
+  function pushUndo(){
+    undoStack.push(JSON.parse(JSON.stringify(curve)));
+    if (undoStack.length > 20) undoStack.shift();
+  }
+
   function render(){
     const dateLabels = RC.buildDateLabels(cfg.dateStart || '2025-01-01', cfg.dateEnd || '2025-12-31', 12);
     RC.drawChart(cvs, curve, dateLabels, cfg.marginLabel);
 
-    const { totalTrades, totalNetProfit } = RC.computeRows(qs);
+    // Stats derived purely from form inputs (need Sinkronkan) vs. stats
+    // derived from the curve itself (always live) — computeRows blends both.
+    const { totalTrades, totalNetProfit, balanceDD, equityDD } = RC.computeRows(qs, curve);
     const profitFactor = qs.grossLoss !== 0 ? qs.grossProfit / qs.grossLoss : 0;
     const tiles = [
       ['Total Trades', RC.fmtInt(totalTrades)],
       ['Net Profit', RC.fmtNum(totalNetProfit)],
       ['Profit Factor', profitFactor.toFixed(2)],
-      ['Initial Deposit', RC.fmtNum(qs.initialDeposit)]
+      ['Initial Deposit', RC.fmtNum(qs.initialDeposit)],
+      ['Balance DD Maximal', RC.fmtNum(balanceDD.maxAmt) + ' (' + balanceDD.maxAmtPct.toFixed(2) + '%)'],
+      ['Equity DD Maximal', RC.fmtNum(equityDD.maxAmt) + ' (' + equityDD.maxAmtPct.toFixed(2) + '%)']
     ];
     document.getElementById('summary').innerHTML = tiles.map(([k,v]) =>
       `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div></div>`
@@ -255,10 +312,6 @@
     ['qsMaxConsecLossesCount','maxConsecLossesCount'], ['qsMaxConsecLossesAmount','maxConsecLossesAmount'],
     ['qsMaxConsecProfitAmount','maxConsecProfitAmount'], ['qsMaxConsecProfitCount','maxConsecProfitCount'],
     ['qsMaxConsecLossAmount','maxConsecLossAmount'], ['qsMaxConsecLossCount','maxConsecLossCount'],
-    ['qsBalanceDDAbsolute','balanceDDAbsolute'], ['qsBalanceDDMaxAmount','balanceDDMaxAmount'], ['qsBalanceDDMaxPct','balanceDDMaxPct'],
-    ['qsBalanceDDRelPct','balanceDDRelPct'], ['qsBalanceDDRelAmount','balanceDDRelAmount'],
-    ['qsEquityDDAbsolute','equityDDAbsolute'], ['qsEquityDDMaxAmount','equityDDMaxAmount'], ['qsEquityDDMaxPct','equityDDMaxPct'],
-    ['qsEquityDDRelPct','equityDDRelPct'], ['qsEquityDDRelAmount','equityDDRelAmount'],
     ['qsSharpeRatio','sharpeRatio']
   ].forEach(([id,key]) => bindQS(id,key));
   bindCfg('cfgStart','dateStart');
@@ -267,7 +320,7 @@
 
   // ---- Sinkronkan: commit form -> stats + rescale curve endpoints ----
   document.getElementById('btnSync').addEventListener('click', () => {
-    const { totalNetProfit } = RC.computeRows(qs);
+    const totalNetProfit = qs.grossProfit - qs.grossLoss;
     const newStart = qs.initialDeposit, newEnd = qs.initialDeposit + totalNetProfit;
     curve = RC.rescaleCurve(curve, newStart, newEnd);
     undoStack = [];
@@ -276,25 +329,49 @@
     render();
   });
 
-  // ---- Acak: nudge each point up / down / unchanged ----
+  // ---- Acak: nudge each point (balance & equity) up / down / unchanged ----
   document.getElementById('btnRandom').addEventListener('click', () => {
-    undoStack.push(JSON.parse(JSON.stringify(curve)));
-    if (undoStack.length > 20) undoStack.shift();
+    pushUndo();
     curve = RC.randomizeCurve(curve);
     persist();
     render();
   });
 
-  // ---- Haluskan: moving-average smoothing pass ----
+  // ---- Haluskan: gentle moving-average smoothing pass (both lines) ----
   document.getElementById('btnSmooth').addEventListener('click', () => {
-    undoStack.push(JSON.parse(JSON.stringify(curve)));
-    if (undoStack.length > 20) undoStack.shift();
-    curve = RC.smoothCurve(curve, 3);
+    pushUndo();
+    curve = RC.smoothCurve(curve);
     persist();
     render();
   });
 
-  // ---- Undo: revert the last Acak / Haluskan step ----
+  // ---- Dekatkan: pull equity partway toward balance (equity only) ----
+  document.getElementById('btnPull').addEventListener('click', () => {
+    pushUndo();
+    curve = RC.pullEquityTowardBalance(curve, 0.3);
+    persist();
+    render();
+  });
+
+  // ---- Acak Equity: nudge equity only, balance untouched ----
+  document.getElementById('btnRandomEquity').addEventListener('click', () => {
+    pushUndo();
+    curve = RC.randomizeEquity(curve);
+    persist();
+    render();
+  });
+
+  // ---- Import Curve Manual: replace the whole curve from pasted CSV ----
+  document.getElementById('btnImportCurve').addEventListener('click', () => {
+    const parsed = RC.parseCurveCSV(document.getElementById('curveCsv').value);
+    if (!parsed){ alert('Format tidak valid. Minimal 2 baris, contoh: 100000,100000'); return; }
+    pushUndo();
+    curve = parsed;
+    persist();
+    render();
+  });
+
+  // ---- Undo: revert the last curve-editing step ----
   document.getElementById('btnUndo').addEventListener('click', () => {
     if (!undoStack.length) return;
     curve = undoStack.pop();
@@ -302,6 +379,7 @@
     render();
   });
 
+  persist();
   render();
 })();
 </script>

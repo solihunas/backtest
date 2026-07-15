@@ -92,7 +92,7 @@
   const RC = ReportCore;
   const state = RC.loadState() || RC.defaultState();
   const { qs, cfg, curve } = state;
-  const { rows } = RC.computeRows(qs);
+  const { rows } = RC.computeRows(qs, curve);
 
   const cvs = document.getElementById('equityChart');
   const dateLabels = RC.buildDateLabels(cfg.dateStart || '2025-01-01', cfg.dateEnd || '2025-12-31', 12);

@@ -22,6 +22,9 @@
   }
   function fmtInt(n) { return fmtNum(n, 0); }
 
+  // Drawdown-related fields are no longer manual inputs: they are derived
+  // live from the actual balance/equity curve (see computeDrawdown below),
+  // so every statistic follows whatever curve is currently on screen.
   const DEFAULT_QS = {
     initialDeposit: 100000,
     bars: 21289,
@@ -45,16 +48,6 @@
     maxConsecProfitCount: 15,
     maxConsecLossAmount: 747.32,
     maxConsecLossCount: 13,
-    balanceDDAbsolute: 556.13,
-    balanceDDMaxAmount: 1294.17,
-    balanceDDMaxPct: 1.16,
-    balanceDDRelPct: 1.23,
-    balanceDDRelAmount: 1287.53,
-    equityDDAbsolute: 487.31,
-    equityDDMaxAmount: 2078.53,
-    equityDDMaxPct: 1.84,
-    equityDDRelPct: 1.84,
-    equityDDRelAmount: 2078.53,
     sharpeRatio: 0.24
   };
 
@@ -64,7 +57,27 @@
     marginLabel: '6119%'
   };
 
-  function computeRows(qs) {
+  // Largest peak-to-trough decline of a series, in both $ and %, plus the
+  // "absolute" drawdown (how far it ever fell below the initial deposit).
+  function computeDrawdown(series, initialDeposit) {
+    let peak = series[0];
+    let maxAmt = 0, maxAmtPct = 0;
+    let maxPct = 0, maxPctAmt = 0;
+    let minVal = series[0];
+    for (let i = 0; i < series.length; i++) {
+      const v = series[i];
+      if (v > peak) peak = v;
+      const dd = peak - v;
+      const ddPct = peak !== 0 ? dd / peak * 100 : 0;
+      if (dd > maxAmt) { maxAmt = dd; maxAmtPct = ddPct; }
+      if (ddPct > maxPct) { maxPct = ddPct; maxPctAmt = dd; }
+      if (v < minVal) minVal = v;
+    }
+    const absolute = Math.max(0, initialDeposit - minVal);
+    return { absolute, maxAmt, maxAmtPct, maxPct, maxPctAmt };
+  }
+
+  function computeRows(qs, curve) {
     const totalTrades = qs.winningTrades + qs.losingTrades;
     const totalNetProfit = qs.grossProfit - qs.grossLoss;
     const profitFactor = qs.grossLoss !== 0 ? qs.grossProfit / qs.grossLoss : 0;
@@ -73,7 +86,10 @@
     const avgLossTrade = qs.losingTrades !== 0 ? -(qs.grossLoss / qs.losingTrades) : 0;
     const profitPct = totalTrades !== 0 ? qs.winningTrades / totalTrades * 100 : 0;
     const lossPct = totalTrades !== 0 ? qs.losingTrades / totalTrades * 100 : 0;
-    const recoveryFactor = qs.balanceDDMaxAmount !== 0 ? totalNetProfit / qs.balanceDDMaxAmount : 0;
+
+    const balanceDD = computeDrawdown(curve.balance, qs.initialDeposit);
+    const equityDD = computeDrawdown(curve.equity, qs.initialDeposit);
+    const recoveryFactor = balanceDD.maxAmt !== 0 ? totalNetProfit / balanceDD.maxAmt : 0;
 
     const rows = [
       [["Initial Deposit", fmtNum(qs.initialDeposit)]],
@@ -81,12 +97,12 @@
       [["Total Net Profit", fmtNum(totalNetProfit)], ["Gross Profit", fmtNum(qs.grossProfit)], ["Gross Loss", fmtNum(-qs.grossLoss)]],
       [["Profit Factor", profitFactor.toFixed(2)], ["Expected Payoff", expectedPayoff.toFixed(2)], ["Sharpe Ratio", (+qs.sharpeRatio).toFixed(2)]],
       [["Recovery Factor", recoveryFactor.toFixed(2)], ["", ""], ["", ""]],
-      [["Balance Drawdown Absolute", fmtNum(qs.balanceDDAbsolute)],
-       ["Balance Drawdown Maximal", `${fmtNum(qs.balanceDDMaxAmount)} (${qs.balanceDDMaxPct}%)`],
-       ["Balance Drawdown Relative", `${qs.balanceDDRelPct}% (${fmtNum(qs.balanceDDRelAmount)})`]],
-      [["Equity Drawdown Absolute", fmtNum(qs.equityDDAbsolute)],
-       ["Equity Drawdown Maximal", `${fmtNum(qs.equityDDMaxAmount)} (${qs.equityDDMaxPct}%)`],
-       ["Equity Drawdown Relative", `${qs.equityDDRelPct}% (${fmtNum(qs.equityDDRelAmount)})`]],
+      [["Balance Drawdown Absolute", fmtNum(balanceDD.absolute)],
+       ["Balance Drawdown Maximal", `${fmtNum(balanceDD.maxAmt)} (${balanceDD.maxAmtPct.toFixed(2)}%)`],
+       ["Balance Drawdown Relative", `${balanceDD.maxPct.toFixed(2)}% (${fmtNum(balanceDD.maxPctAmt)})`]],
+      [["Equity Drawdown Absolute", fmtNum(equityDD.absolute)],
+       ["Equity Drawdown Maximal", `${fmtNum(equityDD.maxAmt)} (${equityDD.maxAmtPct.toFixed(2)}%)`],
+       ["Equity Drawdown Relative", `${equityDD.maxPct.toFixed(2)}% (${fmtNum(equityDD.maxPctAmt)})`]],
       [["Total Trades", fmtInt(totalTrades)],
        ["Short Trades (won %)", `${fmtInt(qs.shortTrades)} (${qs.shortWonPct}%)`],
        ["Long Trades (won %)", `${fmtInt(qs.longTrades)} (${qs.longWonPct}%)`]],
@@ -102,7 +118,7 @@
        ["consecutive profit (count)", `${fmtNum(qs.maxConsecProfitAmount)} (${fmtInt(qs.maxConsecProfitCount)})`],
        ["consecutive loss (count)", `${fmtNum(-qs.maxConsecLossAmount)} (${fmtInt(qs.maxConsecLossCount)})`]]
     ];
-    return { rows, totalTrades, totalNetProfit };
+    return { rows, totalTrades, totalNetProfit, balanceDD, equityDD };
   }
 
   const anchors = [
@@ -157,32 +173,61 @@
     return { balance: scaleArr(curve.balance), equity: scaleArr(curve.equity) };
   }
 
-  // Each point independently: nudge up a little, down a little, or leave as-is.
-  function randomizeCurve(curve) {
+  function seriesRange(curve) {
     const allV = curve.balance.concat(curve.equity);
-    const range = Math.max(...allV) - Math.min(...allV) || 1;
-    const step = range * 0.006;
-    const nudge = arr => arr.map(v => {
+    return (Math.max(...allV) - Math.min(...allV)) || 1;
+  }
+
+  // Each point independently: nudge up a little, down a little, or leave as-is.
+  function randomizeSeries(arr, step) {
+    return arr.map(v => {
       const r = Math.random();
       if (r < 0.34) return v;
       const dir = r < 0.67 ? 1 : -1;
       return v + dir * step * (0.3 + Math.random() * 0.7);
     });
-    return { balance: nudge(curve.balance), equity: nudge(curve.equity) };
+  }
+  function randomizeCurve(curve) {
+    const step = seriesRange(curve) * 0.006;
+    return { balance: randomizeSeries(curve.balance, step), equity: randomizeSeries(curve.equity, step) };
+  }
+  // Equity only — balance untouched.
+  function randomizeEquity(curve) {
+    const step = seriesRange(curve) * 0.006;
+    return { balance: curve.balance, equity: randomizeSeries(curve.equity, step) };
+  }
+  // Pull equity partway toward balance (one click = one gradual step).
+  function pullEquityTowardBalance(curve, factor) {
+    factor = factor === undefined ? 0.3 : factor;
+    const equity = curve.equity.map((v, i) => v + (curve.balance[i] - v) * factor);
+    return { balance: curve.balance, equity };
   }
 
   // Moving-average smoothing pass, applied to balance & equity independently.
-  function smoothCurve(curve, windowSize) {
-    windowSize = windowSize || 3;
-    const smoothArr = arr => arr.map((_, i) => {
+  // One click = one gentle step, not a hard flatten — only blend a fraction
+  // of the way toward a moving average, so it takes several clicks to
+  // fully smooth out and the user can stop wherever looks right.
+  function smoothCurve(curve, blend) {
+    blend = blend === undefined ? 0.35 : blend;
+    const windowSize = 1;
+    const smoothArr = arr => arr.map((v, i) => {
       let sum = 0, count = 0;
       for (let k = -windowSize; k <= windowSize; k++) {
         const idx = i + k;
         if (idx >= 0 && idx < arr.length) { sum += arr[idx]; count++; }
       }
-      return sum / count;
+      const avg = sum / count;
+      return v + (avg - v) * blend;
     });
     return { balance: smoothArr(curve.balance), equity: smoothArr(curve.equity) };
+  }
+
+  function parseCurveCSV(text) {
+    const lines = text.trim().split('\n').map(l => l.split(',').map(s => parseFloat(s.trim())));
+    const balance = lines.map(l => l[0]).filter(v => !isNaN(v));
+    const equity = lines.map((l, i) => (l.length > 1 && !isNaN(l[1])) ? l[1] : balance[i]).slice(0, balance.length);
+    if (balance.length < 2) return null;
+    return { balance, equity };
   }
 
   function niceLevels(min, max, count) {
@@ -226,11 +271,11 @@
     ctx.textBaseline = 'top';
     ctx.font = 'bold 16px Tahoma, Arial, sans-serif';
     ctx.fillStyle = '#3333cc'; ctx.textAlign = 'left';
-    ctx.fillText('Баланс', 6, 2);
-    const balW = ctx.measureText('Баланс').width;
+    ctx.fillText('Balance', 6, 2);
+    const balW = ctx.measureText('Balance').width;
     ctx.fillStyle = '#8a8a8a'; ctx.fillText(' / ', 6 + balW, 2);
     const sepW = ctx.measureText(' / ').width;
-    ctx.fillStyle = '#009a00'; ctx.fillText('Средства', 6 + balW + sepW, 2);
+    ctx.fillStyle = '#009a00'; ctx.fillText('Equity', 6 + balW + sepW, 2);
 
     ctx.strokeStyle = '#c2c2c2'; ctx.lineWidth = 1; ctx.setLineDash([2, 2]);
     ctx.font = 'bold 18px Tahoma, Arial, sans-serif'; ctx.fillStyle = '#4a4a4a';
@@ -308,14 +353,16 @@
   function defaultState() {
     const qs = Object.assign({}, DEFAULT_QS);
     const cfg = Object.assign({}, DEFAULT_CFG);
-    const { totalNetProfit } = computeRows(qs);
+    const totalNetProfit = qs.grossProfit - qs.grossLoss;
     const curve = generateCurve(qs.initialDeposit, qs.initialDeposit + totalNetProfit);
     return { qs, cfg, curve };
   }
 
   global.ReportCore = {
     STORAGE_KEY, mulberry32, fmtNum, fmtInt, DEFAULT_QS, DEFAULT_CFG,
-    computeRows, generateCurve, rescaleCurve, randomizeCurve, smoothCurve,
-    niceLevels, buildDateLabels, drawChart, loadState, saveState, defaultState
+    computeDrawdown, computeRows, generateCurve, rescaleCurve,
+    randomizeCurve, randomizeEquity, pullEquityTowardBalance, smoothCurve,
+    parseCurveCSV, niceLevels, buildDateLabels, drawChart,
+    loadState, saveState, defaultState
   };
 })(window);
