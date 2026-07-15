@@ -1,0 +1,184 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Preview — Strategy Tester Report</title>
+<style>
+  :root{
+    --page-bg:#e7e9ec; --page-bg-dark:#1c1e22;
+    --panel-bg:#f4f5f7; --panel-bg-dark:#26282c;
+    --panel-ink:#1a1a1a; --panel-ink-dark:#e6e7e9;
+    --panel-border:#d3d6da; --panel-border-dark:#3a3d42;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --shell-bg:var(--page-bg-dark); --panel:var(--panel-bg-dark); --ink:var(--panel-ink-dark); --border:var(--panel-border-dark); }
+  }
+  :root{ --shell-bg:var(--page-bg); --panel:var(--panel-bg); --ink:var(--panel-ink); --border:var(--panel-border); }
+  :root[data-theme="dark"]{ --shell-bg:var(--page-bg-dark); --panel:var(--panel-bg-dark); --ink:var(--panel-ink-dark); --border:var(--panel-border-dark); }
+  :root[data-theme="light"]{ --shell-bg:var(--page-bg); --panel:var(--panel-bg); --ink:var(--panel-ink); --border:var(--panel-border); }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ background:var(--shell-bg); color:var(--ink); font-family:Tahoma, "Segoe UI", Arial, sans-serif; }
+
+  .stage{ padding:8px; }
+  .toolbar{
+    display:flex; flex-wrap:wrap; align-items:center; gap:6px;
+    background:var(--panel); border:1px solid var(--border); border-radius:6px;
+    padding:6px 8px; margin-bottom:8px; position:sticky; top:0; z-index:5;
+  }
+  .toolbar a, .toolbar button{
+    font:11px Tahoma, Arial, sans-serif; font-weight:700;
+    padding:7px 10px; border:1px solid var(--border); border-radius:4px;
+    background:#fff; color:#222; cursor:pointer; text-decoration:none;
+  }
+  .toolbar .zoomGroup{ display:flex; align-items:center; gap:4px; }
+  .toolbar .zoomGroup span{ font-size:11px; font-weight:700; min-width:36px; text-align:center; display:inline-block; }
+  .toolbar .spacer{ flex:1; }
+
+  .sheetScroll{
+    overflow:auto; border:1px solid var(--border); background:#d8dadd;
+    padding:12px; border-radius:6px;
+  }
+  .sheet{ width:920px; max-width:none; background:#fff; color:#1a1a1a; margin:0 auto; transform-origin:top left; }
+
+  canvas{ display:block; width:100%; }
+
+  .report{ width:100%; }
+  .row{ display:grid; grid-template-columns:repeat(3,1fr); }
+  .row:nth-child(odd){ background:#ffffff; }
+  .row:nth-child(even){ background:#ebebeb; }
+  .cell{
+    display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+    padding:3px 14px 3px 8px; font-size:11px; overflow:hidden;
+  }
+  .cell .l{ color:#333; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cell .v{ color:#000; font-weight:700; white-space:nowrap; flex:0 0 auto; font-variant-numeric:tabular-nums; }
+
+  .foot{ padding:6px 8px 10px; font-size:9px; color:#aaadb1; text-align:right; }
+
+  .stage:fullscreen{ background:var(--shell-bg); padding:14px; overflow:auto; width:100vw; height:100vh; }
+</style>
+</head>
+<body>
+
+  <div class="stage" id="stage">
+    <div class="toolbar" id="toolbar">
+      <a href="index.html">← Edit Data</a>
+      <button type="button" id="btnFullscreen">⛶ Fullscreen</button>
+      <span class="zoomGroup">
+        <button type="button" id="zoomOut">−</button>
+        <span id="zoomLabel">100%</span>
+        <button type="button" id="zoomIn">+</button>
+      </span>
+      <button type="button" id="zoomReset">Reset</button>
+      <span class="spacer"></span>
+      <button type="button" id="btnDownload">⬇ Download PNG</button>
+    </div>
+
+    <div class="sheetScroll" id="sheetScroll">
+      <div class="sheet" id="sheet">
+        <canvas id="equityChart" width="1500" height="348"></canvas>
+        <div class="report" id="report"></div>
+        <div class="foot">generated report replica</div>
+      </div>
+    </div>
+  </div>
+
+<script src="report-core.js"></script>
+<script>
+(function(){
+  const RC = ReportCore;
+  const state = RC.loadState() || RC.defaultState();
+  const { qs, cfg, curve } = state;
+  const { rows } = RC.computeRows(qs);
+
+  const cvs = document.getElementById('equityChart');
+  const dateLabels = RC.buildDateLabels(cfg.dateStart || '2025-01-01', cfg.dateEnd || '2025-12-31', 12);
+  RC.drawChart(cvs, curve, dateLabels, cfg.marginLabel);
+
+  const reportEl = document.getElementById('report');
+  rows.forEach(cols => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    for (let i = 0; i < 3; i++){
+      const [l, v] = cols[i] || ["",""];
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      const ls = document.createElement('span'); ls.className='l'; ls.textContent = l;
+      const vs = document.createElement('span'); vs.className='v'; vs.textContent = v;
+      cell.appendChild(ls); cell.appendChild(vs);
+      row.appendChild(cell);
+    }
+    reportEl.appendChild(row);
+  });
+
+  // ---- toolbar: fullscreen / zoom / download ----
+  const stage = document.getElementById('stage');
+  document.getElementById('btnFullscreen').addEventListener('click', () => {
+    if (!document.fullscreenElement) stage.requestFullscreen().catch(()=>{});
+    else document.exitFullscreen();
+  });
+
+  let zoom = 1;
+  const sheet = document.getElementById('sheet');
+  const zoomLabel = document.getElementById('zoomLabel');
+  function setZoom(z){
+    zoom = Math.min(2.5, Math.max(0.4, z));
+    sheet.style.zoom = zoom;
+    zoomLabel.textContent = Math.round(zoom*100) + '%';
+  }
+  document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom + 0.1));
+  document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom - 0.1));
+  document.getElementById('zoomReset').addEventListener('click', () => setZoom(1));
+  document.getElementById('sheetScroll').addEventListener('wheel', (e) => {
+    if (e.ctrlKey || e.metaKey){ e.preventDefault(); setZoom(zoom + (e.deltaY < 0 ? 0.1 : -0.1)); }
+  }, { passive:false });
+
+  // On narrow (mobile) screens, auto-fit the zoom so the report isn't
+  // clipped behind a horizontal scrollbar on first open.
+  const scrollEl = document.getElementById('sheetScroll');
+  const available = scrollEl.clientWidth - 24; // minus its own padding
+  const naturalWidth = 920;
+  if (available > 0 && available < naturalWidth){
+    setZoom(Math.max(0.4, available / naturalWidth));
+  }
+
+  document.getElementById('btnDownload').addEventListener('click', () => {
+    const rowH = 34, outW = 1500;
+    const tableH = rows.length * rowH + 24;
+    const out = document.createElement('canvas');
+    out.width = outW; out.height = cvs.height + tableH;
+    const octx = out.getContext('2d');
+    octx.fillStyle = '#ffffff'; octx.fillRect(0,0,out.width,out.height);
+    octx.drawImage(cvs, 0, 0);
+
+    let y = cvs.height;
+    const colW = outW / 3;
+    rows.forEach((cols, ri) => {
+      octx.fillStyle = ri % 2 === 0 ? '#ffffff' : '#ebebeb';
+      octx.fillRect(0, y, outW, rowH);
+      for (let c = 0; c < 3; c++){
+        const [l, v] = cols[c] || ["",""];
+        const x0 = c * colW;
+        octx.textBaseline = 'middle';
+        octx.fillStyle = '#333333'; octx.font = '600 20px Tahoma, Arial, sans-serif'; octx.textAlign = 'left';
+        octx.fillText(l, x0 + 16, y + rowH/2);
+        octx.fillStyle = '#000000'; octx.font = 'bold 20px Tahoma, Arial, sans-serif'; octx.textAlign = 'right';
+        octx.fillText(v, x0 + colW - 16, y + rowH/2);
+      }
+      y += rowH;
+    });
+    octx.fillStyle = '#aaaaaa'; octx.font = '16px Tahoma, Arial, sans-serif'; octx.textAlign = 'right';
+    octx.fillText('generated report replica', outW - 16, y + 18);
+
+    const link = document.createElement('a');
+    link.download = 'strategy-tester-report.png';
+    link.href = out.toDataURL('image/png');
+    link.click();
+  });
+})();
+</script>
+</body>
+</html>
