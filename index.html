@@ -44,6 +44,7 @@
   .editPanel fieldset{ border:1px solid var(--border); border-radius:5px; margin:0 0 10px; padding:8px; }
   .editPanel legend{ font-size:11px; font-weight:700; padding:0 4px; }
   .editPanel label{ display:block; font-size:10px; margin:6px 0 2px; opacity:.85; }
+  .editPanel .grp{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; margin:10px 0 2px; padding-top:6px; border-top:1px dashed var(--border); opacity:.75; }
   .editPanel input[type="text"],
   .editPanel input[type="number"],
   .editPanel input[type="date"],
@@ -150,9 +151,55 @@
   <div class="body">
     <form class="editPanel" id="editPanel" onsubmit="return false;">
       <fieldset>
+        <legend>Quick Stats — isi ini, tabel & chart terisi otomatis</legend>
+
+        <label>Initial Deposit<input type="number" id="qsInitialDeposit" step="0.01"></label>
+        <label>Bars<input type="number" id="qsBars" step="1"></label>
+        <label>Ticks<input type="number" id="qsTicks" step="1"></label>
+
+        <div class="grp">Trades — Win / Lose</div>
+        <label>Winning Trades (count)<input type="number" id="qsWinningTrades" step="1"></label>
+        <label>Losing Trades (count)<input type="number" id="qsLosingTrades" step="1"></label>
+        <label>Gross Profit ($)<input type="number" id="qsGrossProfit" step="0.01"></label>
+        <label>Gross Loss ($, positif)<input type="number" id="qsGrossLoss" step="0.01"></label>
+        <label>Largest Profit Trade<input type="number" id="qsLargestProfitTrade" step="0.01"></label>
+        <label>Largest Loss Trade ($, positif)<input type="number" id="qsLargestLossTrade" step="0.01"></label>
+        <label>Total Deals<input type="number" id="qsTotalDeals" step="1"></label>
+
+        <div class="grp">Short / Long</div>
+        <label>Short Trades (count)<input type="number" id="qsShortTrades" step="1"></label>
+        <label>Short Won %<input type="number" id="qsShortWonPct" step="0.01"></label>
+        <label>Long Trades (count)<input type="number" id="qsLongTrades" step="1"></label>
+        <label>Long Won %<input type="number" id="qsLongWonPct" step="0.01"></label>
+
+        <div class="grp">Consecutive</div>
+        <label>Max Consecutive Wins (count)<input type="number" id="qsMaxConsecWinsCount" step="1"></label>
+        <label>Max Consecutive Wins ($)<input type="number" id="qsMaxConsecWinsAmount" step="0.01"></label>
+        <label>Max Consecutive Losses (count)<input type="number" id="qsMaxConsecLossesCount" step="1"></label>
+        <label>Max Consecutive Losses ($, positif)<input type="number" id="qsMaxConsecLossesAmount" step="0.01"></label>
+        <label>Maximal Consecutive Profit ($)<input type="number" id="qsMaxConsecProfitAmount" step="0.01"></label>
+        <label>Maximal Consecutive Profit (count)<input type="number" id="qsMaxConsecProfitCount" step="1"></label>
+        <label>Maximal Consecutive Loss ($, positif)<input type="number" id="qsMaxConsecLossAmount" step="0.01"></label>
+        <label>Maximal Consecutive Loss (count)<input type="number" id="qsMaxConsecLossCount" step="1"></label>
+
+        <div class="grp">Drawdown</div>
+        <label>Balance DD Absolute<input type="number" id="qsBalanceDDAbsolute" step="0.01"></label>
+        <label>Balance DD Maximal ($)<input type="number" id="qsBalanceDDMaxAmount" step="0.01"></label>
+        <label>Balance DD Maximal (%)<input type="number" id="qsBalanceDDMaxPct" step="0.01"></label>
+        <label>Balance DD Relative (%)<input type="number" id="qsBalanceDDRelPct" step="0.01"></label>
+        <label>Balance DD Relative ($)<input type="number" id="qsBalanceDDRelAmount" step="0.01"></label>
+        <label>Equity DD Absolute<input type="number" id="qsEquityDDAbsolute" step="0.01"></label>
+        <label>Equity DD Maximal ($)<input type="number" id="qsEquityDDMaxAmount" step="0.01"></label>
+        <label>Equity DD Maximal (%)<input type="number" id="qsEquityDDMaxPct" step="0.01"></label>
+        <label>Equity DD Relative (%)<input type="number" id="qsEquityDDRelPct" step="0.01"></label>
+        <label>Equity DD Relative ($)<input type="number" id="qsEquityDDRelAmount" step="0.01"></label>
+
+        <div class="grp">Lainnya</div>
+        <label>Sharpe Ratio<input type="number" id="qsSharpeRatio" step="0.01"></label>
+      </fieldset>
+
+      <fieldset>
         <legend>Chart</legend>
-        <label>Initial Deposit<input type="number" id="cfgInitial" step="0.01"></label>
-        <label>Final Equity<input type="number" id="cfgFinal" step="0.01"></label>
         <label>Start Date<input type="date" id="cfgStart"></label>
         <label>End Date<input type="date" id="cfgEnd"></label>
         <label>Margin Level Label<input type="text" id="cfgMargin"></label>
@@ -160,8 +207,9 @@
           <textarea id="cfgCurve" placeholder="100000,100000&#10;100250,100480&#10;..."></textarea>
         </label>
       </fieldset>
+
       <fieldset>
-        <legend>Report Table</legend>
+        <legend>Report Table (hasil otomatis — bisa diedit manual di sini)</legend>
         <div id="fieldsContainer"></div>
       </fieldset>
     </form>
@@ -197,29 +245,117 @@
   // State
   // ---------------------------------------------------------------
   let cfg = {
-    initialDeposit: 100000,
-    finalEquity: 127348,
     dateStart: '2025-09-04',
     dateEnd: '2026-07-04',
     marginLabel: '6119%',
     curveText: ''
   };
+  // initialDeposit / finalEquity are derived from Quick Stats (computeAndFill)
+  cfg.initialDeposit = 100000;
+  cfg.finalEquity = 127348;
 
-  let rows = [
-    [["Initial Deposit","100 000.00"]],
-    [["Bars","21289"],["Ticks","1 257 170"],["",""]],
-    [["Total Net Profit","26 978.31"],["Gross Profit","54 115.42"],["Gross Loss","-27 137.11"]],
-    [["Profit Factor","1.99"],["Expected Payoff","20.35"],["Sharpe Ratio","0.24"]],
-    [["Recovery Factor","12.98"],["",""],["",""]],
-    [["Balance Drawdown Absolute","556.13"],["Balance Drawdown Maximal","1 294.17 (1.16%)"],["Balance Drawdown Relative","1.23% (1 287.53)"]],
-    [["Equity Drawdown Absolute","487.31"],["Equity Drawdown Maximal","2 078.53 (1.84%)"],["Equity Drawdown Relative","1.84% (2 078.53)"]],
-    [["Total Trades","1326"],["Short Trades (won %)","622 (50.16%)"],["Long Trades (won %)","704 (49.72%)"]],
-    [["Total Deals","2658"],["Profit Trades (% of total)","662 (49.92%)"],["Loss Trades (% of total)","664 (50.08%)"]],
-    [["","Largest"],["profit trade","440.20"],["loss trade","-190.65"]],
-    [["","Average"],["profit trade","81.75"],["loss trade","-40.87"]],
-    [["","Maximum"],["consecutive wins ($)","17 (1 644.20)"],["consecutive losses ($)","16 (-619.66)"]],
-    [["","Maximal"],["consecutive profit (count)","2 901.64 (15)"],["consecutive loss (count)","-747.32 (13)"]]
-  ];
+  // Quick Stats: the "template" — fill these raw numbers and the whole
+  // table below (profit factor, net profit, expected payoff, averages,
+  // percentages...) is calculated and filled in automatically.
+  let qs = {
+    initialDeposit: 100000,
+    bars: 21289,
+    ticks: 1257170,
+    winningTrades: 662,
+    losingTrades: 664,
+    grossProfit: 54115.42,
+    grossLoss: 27137.11,
+    largestProfitTrade: 440.20,
+    largestLossTrade: 190.65,
+    shortTrades: 622,
+    shortWonPct: 50.16,
+    longTrades: 704,
+    longWonPct: 49.72,
+    totalDeals: 2658,
+    maxConsecWinsCount: 17,
+    maxConsecWinsAmount: 1644.20,
+    maxConsecLossesCount: 16,
+    maxConsecLossesAmount: 619.66,
+    maxConsecProfitAmount: 2901.64,
+    maxConsecProfitCount: 15,
+    maxConsecLossAmount: 747.32,
+    maxConsecLossCount: 13,
+    balanceDDAbsolute: 556.13,
+    balanceDDMaxAmount: 1294.17,
+    balanceDDMaxPct: 1.16,
+    balanceDDRelPct: 1.23,
+    balanceDDRelAmount: 1287.53,
+    equityDDAbsolute: 487.31,
+    equityDDMaxAmount: 2078.53,
+    equityDDMaxPct: 1.84,
+    equityDDRelPct: 1.84,
+    equityDDRelAmount: 2078.53,
+    sharpeRatio: 0.24
+  };
+
+  let rows = [];
+
+  function fmtNum(n, decimals){
+    if (decimals === undefined) decimals = 2;
+    if (n === null || n === undefined || isNaN(n)) return '';
+    const neg = n < 0; n = Math.abs(n);
+    let s = n.toFixed(decimals);
+    let parts = s.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return (neg ? '-' : '') + parts.join('.');
+  }
+  function fmtInt(n){
+    if (n === null || n === undefined || isNaN(n)) return '';
+    return fmtNum(n, 0);
+  }
+
+  // Build the full report table from the Quick Stats raw inputs.
+  function computeAndFill(){
+    const totalTrades = qs.winningTrades + qs.losingTrades;
+    const totalNetProfit = qs.grossProfit - qs.grossLoss;
+    const profitFactor = qs.grossLoss !== 0 ? qs.grossProfit / qs.grossLoss : 0;
+    const expectedPayoff = totalTrades !== 0 ? totalNetProfit / totalTrades : 0;
+    const avgProfitTrade = qs.winningTrades !== 0 ? qs.grossProfit / qs.winningTrades : 0;
+    const avgLossTrade = qs.losingTrades !== 0 ? -(qs.grossLoss / qs.losingTrades) : 0;
+    const profitPct = totalTrades !== 0 ? qs.winningTrades / totalTrades * 100 : 0;
+    const lossPct = totalTrades !== 0 ? qs.losingTrades / totalTrades * 100 : 0;
+    const recoveryFactor = qs.balanceDDMaxAmount !== 0 ? totalNetProfit / qs.balanceDDMaxAmount : 0;
+
+    rows = [
+      [["Initial Deposit", fmtNum(qs.initialDeposit)]],
+      [["Bars", fmtInt(qs.bars)],["Ticks", fmtNum(qs.ticks,0)],["",""]],
+      [["Total Net Profit", fmtNum(totalNetProfit)],["Gross Profit", fmtNum(qs.grossProfit)],["Gross Loss", fmtNum(-qs.grossLoss)]],
+      [["Profit Factor", profitFactor.toFixed(2)],["Expected Payoff", expectedPayoff.toFixed(2)],["Sharpe Ratio", (+qs.sharpeRatio).toFixed(2)]],
+      [["Recovery Factor", recoveryFactor.toFixed(2)],["",""],["",""]],
+      [["Balance Drawdown Absolute", fmtNum(qs.balanceDDAbsolute)],
+       ["Balance Drawdown Maximal", `${fmtNum(qs.balanceDDMaxAmount)} (${qs.balanceDDMaxPct}%)`],
+       ["Balance Drawdown Relative", `${qs.balanceDDRelPct}% (${fmtNum(qs.balanceDDRelAmount)})`]],
+      [["Equity Drawdown Absolute", fmtNum(qs.equityDDAbsolute)],
+       ["Equity Drawdown Maximal", `${fmtNum(qs.equityDDMaxAmount)} (${qs.equityDDMaxPct}%)`],
+       ["Equity Drawdown Relative", `${qs.equityDDRelPct}% (${fmtNum(qs.equityDDRelAmount)})`]],
+      [["Total Trades", fmtInt(totalTrades)],
+       ["Short Trades (won %)", `${fmtInt(qs.shortTrades)} (${qs.shortWonPct}%)`],
+       ["Long Trades (won %)", `${fmtInt(qs.longTrades)} (${qs.longWonPct}%)`]],
+      [["Total Deals", fmtInt(qs.totalDeals)],
+       ["Profit Trades (% of total)", `${fmtInt(qs.winningTrades)} (${profitPct.toFixed(2)}%)`],
+       ["Loss Trades (% of total)", `${fmtInt(qs.losingTrades)} (${lossPct.toFixed(2)}%)`]],
+      [["","Largest"],["profit trade", fmtNum(qs.largestProfitTrade)],["loss trade", fmtNum(-qs.largestLossTrade)]],
+      [["","Average"],["profit trade", fmtNum(avgProfitTrade)],["loss trade", fmtNum(avgLossTrade)]],
+      [["","Maximum"],
+       ["consecutive wins ($)", `${fmtInt(qs.maxConsecWinsCount)} (${fmtNum(qs.maxConsecWinsAmount)})`],
+       ["consecutive losses ($)", `${fmtInt(qs.maxConsecLossesCount)} (${fmtNum(-qs.maxConsecLossesAmount)})`]],
+      [["","Maximal"],
+       ["consecutive profit (count)", `${fmtNum(qs.maxConsecProfitAmount)} (${fmtInt(qs.maxConsecProfitCount)})`],
+       ["consecutive loss (count)", `${fmtNum(-qs.maxConsecLossAmount)} (${fmtInt(qs.maxConsecLossCount)})`]]
+    ];
+
+    cfg.initialDeposit = qs.initialDeposit;
+    cfg.finalEquity = qs.initialDeposit + totalNetProfit;
+
+    renderTable();
+    buildFieldInputs();
+    renderChart();
+  }
 
   // ---------------------------------------------------------------
   // Table render + editable field inputs
@@ -472,22 +608,39 @@
   // ---------------------------------------------------------------
   // Config form wiring
   // ---------------------------------------------------------------
-  function bindNumber(id, key){
-    const el = document.getElementById(id);
-    el.value = cfg[key];
-    el.addEventListener('input', () => { cfg[key] = parseFloat(el.value) || 0; renderChart(); });
-  }
   function bindText(id, key){
     const el = document.getElementById(id);
     el.value = cfg[key];
     el.addEventListener('input', () => { cfg[key] = el.value; renderChart(); });
   }
-  bindNumber('cfgInitial', 'initialDeposit');
-  bindNumber('cfgFinal', 'finalEquity');
   bindText('cfgStart', 'dateStart');
   bindText('cfgEnd', 'dateEnd');
   bindText('cfgMargin', 'marginLabel');
   bindText('cfgCurve', 'curveText');
+
+  function bindQS(id, key){
+    const el = document.getElementById(id);
+    el.value = qs[key];
+    el.addEventListener('input', () => { qs[key] = parseFloat(el.value) || 0; computeAndFill(); });
+  }
+  [
+    ['qsInitialDeposit','initialDeposit'], ['qsBars','bars'], ['qsTicks','ticks'],
+    ['qsWinningTrades','winningTrades'], ['qsLosingTrades','losingTrades'],
+    ['qsGrossProfit','grossProfit'], ['qsGrossLoss','grossLoss'],
+    ['qsLargestProfitTrade','largestProfitTrade'], ['qsLargestLossTrade','largestLossTrade'],
+    ['qsShortTrades','shortTrades'], ['qsShortWonPct','shortWonPct'],
+    ['qsLongTrades','longTrades'], ['qsLongWonPct','longWonPct'],
+    ['qsTotalDeals','totalDeals'],
+    ['qsMaxConsecWinsCount','maxConsecWinsCount'], ['qsMaxConsecWinsAmount','maxConsecWinsAmount'],
+    ['qsMaxConsecLossesCount','maxConsecLossesCount'], ['qsMaxConsecLossesAmount','maxConsecLossesAmount'],
+    ['qsMaxConsecProfitAmount','maxConsecProfitAmount'], ['qsMaxConsecProfitCount','maxConsecProfitCount'],
+    ['qsMaxConsecLossAmount','maxConsecLossAmount'], ['qsMaxConsecLossCount','maxConsecLossCount'],
+    ['qsBalanceDDAbsolute','balanceDDAbsolute'], ['qsBalanceDDMaxAmount','balanceDDMaxAmount'], ['qsBalanceDDMaxPct','balanceDDMaxPct'],
+    ['qsBalanceDDRelPct','balanceDDRelPct'], ['qsBalanceDDRelAmount','balanceDDRelAmount'],
+    ['qsEquityDDAbsolute','equityDDAbsolute'], ['qsEquityDDMaxAmount','equityDDMaxAmount'], ['qsEquityDDMaxPct','equityDDMaxPct'],
+    ['qsEquityDDRelPct','equityDDRelPct'], ['qsEquityDDRelAmount','equityDDRelAmount'],
+    ['qsSharpeRatio','sharpeRatio']
+  ].forEach(([id,key]) => bindQS(id,key));
 
   // ---------------------------------------------------------------
   // Toolbar: edit toggle, fullscreen, zoom, download
@@ -567,8 +720,6 @@
   // ---------------------------------------------------------------
   // Init
   // ---------------------------------------------------------------
-  renderTable();
-  buildFieldInputs();
-  renderChart();
+  computeAndFill();
 })();
 </script>
