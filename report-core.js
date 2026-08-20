@@ -25,37 +25,44 @@
   // Drawdown-related fields are no longer manual inputs: they are derived
   // live from the actual balance/equity curve (see computeDrawdown below),
   // so every statistic follows whatever curve is currently on screen.
+  //
+  // Defaults describe a healthy 4-year backtest: +211.4% net profit on a
+  // 100,000 deposit, ~12.2% max balance drawdown, 1,450 trades (>1000).
   const DEFAULT_QS = {
     initialDeposit: 100000,
-    bars: 21289,
-    ticks: 1257170,
-    winningTrades: 662,
-    losingTrades: 664,
-    grossProfit: 54115.42,
-    grossLoss: 27137.11,
-    largestProfitTrade: 440.20,
-    largestLossTrade: 190.65,
-    shortTrades: 622,
-    shortWonPct: 50.16,
-    longTrades: 704,
-    longWonPct: 49.72,
-    totalDeals: 2658,
-    maxConsecWinsCount: 17,
-    maxConsecWinsAmount: 1644.20,
-    maxConsecLossesCount: 16,
-    maxConsecLossesAmount: 619.66,
-    maxConsecProfitAmount: 2901.64,
-    maxConsecProfitCount: 15,
-    maxConsecLossAmount: 747.32,
-    maxConsecLossCount: 13,
-    sharpeRatio: 0.24
+    bars: 24960,
+    ticks: 1622400,
+    winningTrades: 850,
+    losingTrades: 600,
+    grossProfit: 446400,
+    grossLoss: 235000,
+    largestProfitTrade: 4200,
+    largestLossTrade: 2600,
+    shortTrades: 680,
+    shortWonPct: 57.35,
+    longTrades: 770,
+    longWonPct: 59.74,
+    totalDeals: 2900,
+    maxConsecWinsCount: 19,
+    maxConsecWinsAmount: 8950,
+    maxConsecLossesCount: 14,
+    maxConsecLossesAmount: 4230,
+    maxConsecProfitAmount: 15200,
+    maxConsecProfitCount: 24,
+    maxConsecLossAmount: 6100,
+    maxConsecLossCount: 17,
+    sharpeRatio: 1.18
   };
 
   const DEFAULT_CFG = {
-    dateStart: '2025-09-04',
-    dateEnd: '2026-07-04',
+    dateStart: '2022-08-20',
+    dateEnd: '2026-08-20',
     marginLabel: '6119%'
   };
+
+  // Noise multiplier tuned (via a small offline search) so the default
+  // scenario above lands its balance-drawdown-maximal at ~12.2%.
+  const DEFAULT_VOLATILITY = 10.42;
 
   // Largest peak-to-trough decline of a series, in both $ and %, plus the
   // "absolute" drawdown (how far it ever fell below the initial deposit).
@@ -141,16 +148,19 @@
     return anchors[anchors.length - 1][1];
   }
 
-  function generateCurve(initialDeposit, finalEquity) {
+  // noiseMult scales how choppy/volatile the generated curve is (and so,
+  // roughly, how deep its drawdowns are) independent of the profit target.
+  function generateCurve(initialDeposit, finalEquity, N, noiseMult) {
+    N = N || 1326;
+    noiseMult = noiseMult === undefined ? 1 : noiseMult;
     const rnd = mulberry32(20100104);
     const scaleFactor = (finalEquity - initialDeposit) / (BASE_END - BASE_START || 1);
     const scaleV = v => initialDeposit + (v - BASE_START) * scaleFactor;
-    const N = 1326;
     const balance = [], equity = [];
     let noise = 0, eWalk = 0;
     for (let i = 0; i <= N; i++) {
       const t = i / N;
-      noise += (rnd() - 0.5) * 90 * scaleFactor;
+      noise += (rnd() - 0.5) * 90 * scaleFactor * noiseMult;
       noise *= 0.9;
       const b = scaleV(anchorAt(t)) + noise;
       balance.push(b);
@@ -160,7 +170,9 @@
       if (rnd() < 0.05) e += (rnd() - 0.5) * 900 * scale;
       equity.push(e);
     }
-    return { balance, equity };
+    // Noise can drift the endpoints slightly off-target; snap them back
+    // exactly so the chart always matches the deposit/profit figures.
+    return rescaleCurve({ balance, equity }, initialDeposit, finalEquity);
   }
 
   // Move the curve's start/end onto new targets while keeping its shape.
@@ -354,7 +366,8 @@
     const qs = Object.assign({}, DEFAULT_QS);
     const cfg = Object.assign({}, DEFAULT_CFG);
     const totalNetProfit = qs.grossProfit - qs.grossLoss;
-    const curve = generateCurve(qs.initialDeposit, qs.initialDeposit + totalNetProfit);
+    const N = qs.winningTrades + qs.losingTrades;
+    const curve = generateCurve(qs.initialDeposit, qs.initialDeposit + totalNetProfit, N, DEFAULT_VOLATILITY);
     return { qs, cfg, curve };
   }
 
